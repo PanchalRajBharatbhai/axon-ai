@@ -10,6 +10,10 @@ from datetime import datetime
 import random
 import json
 import webbrowser
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Import existing AI modules
 from multilang_handler import MultiLangHandler
@@ -35,7 +39,7 @@ class AIBridge:
         self.whatsapp_automation = WhatsAppAutomation()
         self.contacts_db = ContactDatabase()
         self.owner_name = "User"
-        self.REMOVED_HF_TOKEN = REMOVED_HF_TOKEN or 'REMOVED_HF_TOKEN'
+        self.REMOVED_HF_TOKEN = REMOVED_HF_TOKEN or os.getenv("HF_TOKEN")
         
         
         # Initialize new AI modules with individual error handling
@@ -116,7 +120,7 @@ class AIBridge:
                 else:
                     response_text = "What would you like me to search for?"
             
-            elif 'youtube' in query and any(word in query for word in ['search', 'find', 'dhundo', 'khojo', 'chalao', 'chalavo', 'bajao', 'sunao']):
+            elif 'youtube' in query and any(word in query for word in ['search', 'find', 'dhundo', 'khojo', 'chalao', 'chalavo', 'bajao', 'sunao','']):
                 search_query = query.replace("youtube", "").replace("search", "").replace("find", "").replace("on", "").replace("per", "").replace("par", "").replace("pe", "").replace("chalao", "").replace("chalavo", "").replace("bajao", "").replace("sunao", "").replace("dhundo", "").replace("khojo", "").replace("song", "").strip()
                 if search_query:
                     youtube_url = f"https://www.youtube.com/results?search_query={search_query.replace(' ', '+')}"

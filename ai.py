@@ -33,6 +33,10 @@ import numpy as np
 from PIL import Image
 import pyqrcode
 import png
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Import audio configuration module
 from audio_config import create_tts_engine, get_microphone, configure_recognizer, print_audio_config
@@ -55,7 +59,7 @@ except ImportError as e:
 CONFIG = {
     'email': 'rajpanchal342006@gmail.com',
     'password': 'djds jqim nxrp yevw',
-    'REMOVED_HF_TOKEN': 'REMOVED_HF_TOKEN',
+    'REMOVED_HF_TOKEN': os.getenv("HF_TOKEN"),
     'REMOVED_HF_TOKEN': 'https://api-inference.huggingface.co/models/gpt2',
     'owner_name': 'Raj Panchal',
     'assistant_name': 'Axon'
