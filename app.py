@@ -7,11 +7,9 @@ Provides REST API and WebSocket support for the chat interface
 from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
-from werkzeug.utils import secure_filename
 from web_database import WebDatabase
 from ai_integration import AIBridge
 from export_utils import ExportUtils
-from vision_ai import analyze_image
 from functools import wraps
 import os
 import smtplib
@@ -865,50 +863,6 @@ Received at: {ist_time_str} (IST)
     except Exception as e:
         print(f"Email Error: {e}")
         return jsonify({'success': False, 'message': 'Failed to send message over email. Please try again later.'}), 500
-
-
-# ============================================================================
-# Vision AI API
-# ============================================================================
-
-@app.route('/api/upload-image', methods=['POST'])
-def upload_image():
-    """Handle image upload and analysis"""
-    if 'image' not in request.files:
-        return jsonify({'success': False, 'message': 'No image file provided'}), 400
-    
-    file = request.files['image']
-    
-    if file.filename == '':
-        return jsonify({'success': False, 'message': 'No selected file'}), 400
-    
-    if file:
-        try:
-            # Save file temporarily
-            filename = secure_filename(file.filename)
-            temp_path = os.path.join('static', 'uploads', filename)
-            
-            # Ensure directory exists
-            os.makedirs(os.path.join('static', 'uploads'), exist_ok=True)
-            
-            file.save(temp_path)
-            
-            # Analyze image
-            result = analyze_image(temp_path, analysis_type='complete')
-            
-            # Clean up (optional, or keep for history)
-            # os.remove(temp_path)
-            
-            return jsonify({
-                'success': True, 
-                'analysis': result,
-                'image_url': f'/static/uploads/{filename}'
-            }), 200
-            
-        except Exception as e:
-            print(f"Image Upload Error: {e}")
-            return jsonify({'success': False, 'message': str(e)}), 500
-
 
 # ============================================================================
 # WebSocket Events for Real-time Chat
