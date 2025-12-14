@@ -1007,33 +1007,8 @@ def handle_message(data):
 
 
 # ============================================================================
-# Run Server
+# Application Entry Point
 # ============================================================================
-
-
-if __name__ == '__main__':
-    print("=" * 60)
-    print("AXON AI WEB SERVER")
-    print("=" * 60)
-    print("\n[+] Initializing server...")
-    
-    # Get port from environment variable (Render sets this) or default to 5000
-    port = int(os.environ.get('PORT', 5000))
-    
-    print(f"[+] Server starting at: http://localhost:{port}")
-    print("[+] Press Ctrl+C to stop\n")
-    print("=" * 60)
-    
-    try:
-        # For local development with python app.py
-        # For production, Gunicorn will import the app object directly
-        socketio.run(app, debug=True, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
-    except OSError as e:
-        if "address already in use" in str(e).lower():
-            print(f"\n[!] ERROR: Port {port} is already in use!")
-            print("[!] Please stop the existing server or use a different port.")
-        else:
-            print(f"\n[!] ERROR: {e}")
-        import sys
-        sys.exit(1)
+# For Render deployment: Gunicorn will import 'app' and 'socketio' directly
+# No if __name__ == '__main__' block needed for production deployment
 
