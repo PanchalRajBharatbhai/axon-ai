@@ -4,7 +4,7 @@ Flask Backend API for Axon AI Web Interface
 Provides REST API and WebSocket support for the chat interface
 """
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from web_database import WebDatabase
 from ai_integration import AIBridge
@@ -38,27 +38,23 @@ active_sessions = {}
 # ============================================================================
 # Static File Routes
 # ============================================================================
+app = Flask(
+    __name__,
+    static_folder="static",
+    static_url_path=""
+)
 
-@app.route('/')
+@app.route("/")
 def index():
-    """Serve home page"""
-    return send_from_directory('static', 'index.html')
+    return app.send_static_file("index.html")
 
-@app.route('/login')
+@app.route("/login")
 def login_page():
-    """Serve login page"""
-    return send_from_directory('static', 'login.html')
+    return app.send_static_file("login.html")
 
-@app.route('/privacy-policy')
+@app.route("/privacy-policy")
 def privacy_policy():
-    """Serve privacy policy page"""
-    return send_from_directory('static', 'privacy-policy.html')
-
-@app.route('/<path:path>')
-def serve_static(path):
-    """Serve static files"""
-    return send_from_directory('static', path)
-
+    return app.send_static_file("privacy-policy.html")
 
 # ============================================================================
 # Admin Authentication Middleware
