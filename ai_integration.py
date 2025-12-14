@@ -17,7 +17,6 @@ load_dotenv()
 
 # Import existing AI modules
 from multilang_handler import MultiLangHandler
-from whatsapp_automation import WhatsAppAutomation
 from contacts_db import ContactDatabase
 
 # Import new AI modules
@@ -36,7 +35,6 @@ class AIBridge:
         global AI_MODULES_AVAILABLE
         
         self.multilang_handler = MultiLangHandler()
-        self.whatsapp_automation = WhatsAppAutomation()
         self.contacts_db = ContactDatabase()
         self.owner_name = "User"
         self.REMOVED_HF_TOKEN = REMOVED_HF_TOKEN or os.getenv("HF_TOKEN")
