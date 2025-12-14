@@ -4,12 +4,10 @@ Flask Backend API for Axon AI Web Interface
 Provides REST API and WebSocket support for the chat interface
 """
 
-from flask import Flask, request, jsonify, send_from_directory, send_file
-from flask_socketio import SocketIO, emit
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from web_database import WebDatabase
 from ai_integration import AIBridge
-from export_utils import ExportUtils
 from functools import wraps
 import os
 import smtplib
@@ -28,7 +26,6 @@ CORS(app)
 
 # Initialize SocketIO (will auto-detect best async mode)
 # Supports: eventlet, gevent, threading (in order of preference)
-socketio = SocketIO(app, cors_allowed_origins="*", logger=False, engineio_logger=False)
 
 # Initialize database and AI bridge
 db = WebDatabase()
@@ -36,32 +33,6 @@ ai_bridge = AIBridge()
 
 # Store active sessions
 active_sessions = {}
-
-
-# ============================================================================
-# Static File Routes
-# ============================================================================
-
-@app.route('/')
-def index():
-    """Serve home page"""
-    return send_from_directory('static', 'index.html')
-
-@app.route('/login')
-def login_page():
-    """Serve login page"""
-    return send_from_directory('static', 'login.html')
-
-@app.route('/privacy-policy')
-def privacy_policy():
-    """Serve privacy policy page"""
-    return send_from_directory('static', 'privacy-policy.html')
-
-@app.route('/<path:path>')
-def serve_static(path):
-    """Serve static files"""
-    return send_from_directory('static', path)
-
 
 # ============================================================================
 # Admin Authentication Middleware
@@ -609,142 +580,6 @@ def admin_get_activity_logs(current_user):
     return jsonify({'success': True, 'logs': logs}), 200
 
 
-@app.route('/api/admin/export/users', methods=['GET'])
-@admin_required
-def admin_export_users(current_user):
-    """Export users to Excel or CSV (admin only)"""
-    format_type = request.args.get('format', 'excel').lower()
-    
-    users = db.get_all_users(include_inactive=True)
-    
-    try:
-        if format_type == 'excel':
-            output = ExportUtils.export_users_to_excel(users)
-            db.log_activity(current_user['id'], 'EXPORT_USERS', 'Exported users to Excel')
-            return send_file(
-                output,
-                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                as_attachment=True,
-                download_name=f'users_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
-            )
-        elif format_type == 'csv':
-            output = ExportUtils.export_users_to_csv(users)
-            db.log_activity(current_user['id'], 'EXPORT_USERS', 'Exported users to CSV')
-            return send_file(
-                output,
-                mimetype='text/csv',
-                as_attachment=True,
-                download_name=f'users_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
-            )
-        else:
-            return jsonify({'success': False, 'message': 'Invalid format. Use excel or csv'}), 400
-    except ImportError as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@app.route('/api/admin/export/chat-history', methods=['GET'])
-@admin_required
-def admin_export_chat_history(current_user):
-    """Export chat history to Excel (admin only)"""
-    # Get all chat history with user info
-    import sqlite3
-    conn = sqlite3.connect(db.db_path)
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        SELECT c.id, c.user_id, u.username, c.message, c.response, c.mode, c.language, c.timestamp
-        FROM chat_history c
-        JOIN users u ON c.user_id = u.id
-        ORDER BY c.timestamp DESC
-    ''')
-    
-    chat_data = cursor.fetchall()
-    conn.close()
-    
-    chat_history = [{
-        'id': row[0],
-        'user_id': row[1],
-        'username': row[2],
-        'message': row[3],
-        'response': row[4],
-        'mode': row[5],
-        'language': row[6],
-        'timestamp': row[7]
-    } for row in chat_data]
-    
-    try:
-        output = ExportUtils.export_chat_history_to_excel(chat_history)
-        db.log_activity(current_user['id'], 'EXPORT_CHAT_HISTORY', f'Exported {len(chat_history)} messages')
-        
-        from datetime import datetime
-        return send_file(
-            output,
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            as_attachment=True,
-            download_name=f'chat_history_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
-        )
-    except ImportError as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@app.route('/api/admin/export/activity-logs', methods=['GET'])
-@admin_required
-def admin_export_activity_logs(current_user):
-    """Export activity logs to Excel or CSV (admin only)"""
-    format_type = request.args.get('format', 'excel').lower()
-    
-    logs = db.get_activity_logs(limit=10000)  # Get more logs for export
-    
-    try:
-        if format_type == 'excel':
-            output = ExportUtils.export_activity_logs_to_excel(logs)
-            db.log_activity(current_user['id'], 'EXPORT_LOGS', 'Exported activity logs to Excel')
-            
-            from datetime import datetime
-            return send_file(
-                output,
-                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                as_attachment=True,
-                download_name=f'activity_logs_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
-            )
-        elif format_type == 'csv':
-            output = ExportUtils.export_activity_logs_to_csv(logs)
-            db.log_activity(current_user['id'], 'EXPORT_LOGS', 'Exported activity logs to CSV')
-            
-            from datetime import datetime
-            return send_file(
-                output,
-                mimetype='text/csv',
-                as_attachment=True,
-                download_name=f'activity_logs_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
-            )
-        else:
-            return jsonify({'success': False, 'message': 'Invalid format. Use excel or csv'}), 400
-    except ImportError as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@app.route('/api/admin/export/analytics', methods=['GET'])
-@admin_required
-def admin_export_analytics(current_user):
-    """Export analytics report to PDF (admin only)"""
-    analytics = db.get_admin_analytics()
-    
-    try:
-        output = ExportUtils.export_analytics_to_pdf(analytics)
-        db.log_activity(current_user['id'], 'EXPORT_ANALYTICS', 'Exported analytics to PDF')
-        
-        from datetime import datetime
-        return send_file(
-            output,
-            mimetype='application/pdf',
-            as_attachment=True,
-            download_name=f'analytics_report_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
-        )
-    except ImportError as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
 @app.route('/api/admin/settings', methods=['GET'])
 @admin_required
 def admin_get_settings(current_user):
@@ -863,102 +698,6 @@ Received at: {ist_time_str} (IST)
     except Exception as e:
         print(f"Email Error: {e}")
         return jsonify({'success': False, 'message': 'Failed to send message over email. Please try again later.'}), 500
-
-# ============================================================================
-# WebSocket Events for Real-time Chat
-# ============================================================================
-
-@socketio.on('connect')
-def handle_connect():
-    """Handle client connection"""
-    print('[+] Client connected')
-    emit('connected', {'message': 'Connected to Axon AI'})
-
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    """Handle client disconnection"""
-    print('[-] Client disconnected')
-
-
-@socketio.on('authenticate')
-def handle_authenticate(data):
-    """Authenticate WebSocket connection"""
-    session_token = data.get('session_token')
-    
-    if not session_token:
-        emit('authenticated', {
-            'success': False,
-            'message': 'No session token provided'
-        })
-        return
-    
-    # Verify session
-    session = db.verify_session(session_token)
-    
-    if session['valid']:
-        emit('authenticated', {
-            'success': True,
-            'user': session['user']
-        })
-    else:
-        emit('authenticated', {
-            'success': False,
-            'message': 'Invalid session'
-        })
-
-
-@socketio.on('send_message')
-def handle_message(data):
-    """Handle incoming chat message"""
-    session_token = data.get('session_token')
-    message = data.get('message')
-    mode = data.get('mode', 'text')
-    
-    if not session_token or not message:
-        emit('error', {'message': 'Missing required data'})
-        return
-    
-    # Verify session
-    session = db.verify_session(session_token)
-    
-    if not session['valid']:
-        emit('error', {'message': 'Invalid session'})
-        return
-    
-    user_id = session['user']['id']
-    
-    # Process message with AI
-    try:
-        ai_result = ai_bridge.process_command(message, mode)
-        
-        # Save to chat history
-        db.add_chat_message(
-            user_id,
-            message,
-            ai_result['response'],
-            mode,
-            ai_result['language']
-        )
-        
-        # Send response back to client
-        emit('receive_message', {
-            'message': message,
-            'response': ai_result['response'],
-            'language': ai_result['language'],
-            'mode': mode,
-            'success': ai_result['success']
-        })
-    except Exception as e:
-        print(f"AI Processing Error: {e}")
-        emit('receive_message', {
-            'message': message,
-            'response': "I'm sorry, I encountered an error processing your request.",
-            'language': 'en',
-            'mode': mode,
-            'success': False
-        })
-
 
 # ============================================================================
 # Application Entry Point
