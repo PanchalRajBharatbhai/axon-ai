@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Profile - Axon AI</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/design-system.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <script src="js/theme.js"></script>
+    <style>
+        body {
+            background-color: var(--bg-primary);
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Liquid Glass Mesh Background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(circle at 15% 50%, var(--mesh-color-1) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, var(--mesh-color-2) 0%, transparent 50%),
+                radial-gradient(circle at 50% 80%, var(--mesh-color-3) 0%, transparent 50%);
+            animation: meshMove 20s ease-in-out infinite;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        @keyframes meshMove {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+    </style>
+    <link rel="icon" type="image/png" href="logo.png">
+</head>
+
+<body>
+    <div class="profile-container animate-fade-in-up" style="padding: var(--space-6);">
+        <!-- Back Button -->
+        <div style="margin-bottom: var(--space-6); display: flex; justify-content: space-between; align-items: center;">
+            <a href="admin.html" class="btn btn-ghost">
+                <span>←</span>
+                <span>Back to Dashboard</span>
+            </a>
+            <button class="btn btn-ghost theme-toggle" aria-label="Toggle Theme">
+                <span class="theme-icon">☀️</span>
+            </button>
+        </div>
+
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <div class="profile-avatar-section">
+                <div class="profile-avatar-large" id="profileAvatar">A</div>
+                <button class="avatar-upload-btn" title="Change Avatar">
+                    <span>📷</span>
+                </button>
+            </div>
+
+            <div class="profile-info">
+                <h1 class="profile-name" id="profileName">Admin User</h1>
+                <p class="profile-role" id="profileRole">System Administrator</p>
+                <div class="profile-meta">
+                    <div>
+                        <span>📧</span>
+                        <span id="profileEmail">admin@example.com</span>
+                    </div>
+                    <div>
+                        <span>📅</span>
+                        <span>Joined <span id="profileJoined">-</span></span>
+                    </div>
+                    <div>
+                        <span>🕒</span>
+                        <span>Last login <span id="profileLastLogin">-</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Content -->
+        <div class="profile-content">
+            <!-- Left Column - Profile Information -->
+            <div>
+                <!-- Personal Information -->
+                <div class="profile-section">
+                    <h3 class="section-title">Personal Information</h3>
+                    <form id="profileForm">
+                        <div class="input-group">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" class="input" placeholder="Enter username">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" class="input" placeholder="Enter email">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <span>💾</span>
+                            <span>Save Changes</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Security Settings -->
+                <div class="profile-section" style="margin-top: var(--space-6);">
+                    <h3 class="section-title">Security</h3>
+                    <form id="passwordForm">
+                        <div class="input-group">
+                            <label for="currentPassword">Current Password</label>
+                            <input type="password" id="currentPassword" class="input"
+                                placeholder="Enter current password">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="newPassword">New Password</label>
+                            <input type="password" id="newPassword" class="input" placeholder="Enter new password">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="confirmPassword">Confirm New Password</label>
+                            <input type="password" id="confirmPassword" class="input"
+                                placeholder="Confirm new password">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <span>🔒</span>
+                            <span>Update Password</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Column - Activity & Stats -->
+            <div>
+                <!-- Quick Stats -->
+                <div class="profile-section">
+                    <h3 class="section-title">Quick Stats</h3>
+                    <div style="display: grid; gap: var(--space-4);">
+                        <div
+                            style="padding: var(--space-4); background-color: var(--bg-tertiary); border-radius: var(--radius-lg);">
+                            <div style="font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--accent-primary);"
+                                id="adminActions">0</div>
+                            <div style="font-size: var(--text-sm); color: var(--text-secondary);">Admin Actions</div>
+                        </div>
+                        <div
+                            style="padding: var(--space-4); background-color: var(--bg-tertiary); border-radius: var(--radius-lg);">
+                            <div style="font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--success);"
+                                id="usersManaged">0</div>
+                            <div style="font-size: var(--text-sm); color: var(--text-secondary);">Users Managed</div>
+                        </div>
+                        <div
+                            style="padding: var(--space-4); background-color: var(--bg-tertiary); border-radius: var(--radius-lg);">
+                            <div style="font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--info);"
+                                id="loginCount">0</div>
+                            <div style="font-size: var(--text-sm); color: var(--text-secondary);">Total Logins</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="profile-section" style="margin-top: var(--space-6);">
+                    <h3 class="section-title">Recent Activity</h3>
+                    <div id="recentActivity">
+                        <!-- Activity items will be populated here -->
+                        <div class="activity-item">
+                            <div class="activity-icon">🔐</div>
+                            <div class="activity-content">
+                                <div class="activity-title">Logged in to admin panel</div>
+                                <div class="activity-time">Just now</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        const API_URL = '/api';
+        const sessionToken = localStorage.getItem('session_token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        // Check authentication
+        if (!sessionToken) {
+            window.location.href = 'index.html';
+        }
+
+        // Load profile data
+        async function loadProfile() {
+            try {
+                const response = await fetch(`${API_URL}/user`, {
+                    headers: {
+                        'Authorization': sessionToken
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.user.is_admin) {
+                    const user = data.user;
+
+                    // Update profile display
+                    document.getElementById('profileName').textContent = user.username;
+                    document.getElementById('profileEmail').textContent = user.email;
+                    document.getElementById('profileAvatar').textContent = user.username[0].toUpperCase();
+                    document.getElementById('profileRole').textContent = user.is_superadmin ? 'Super Administrator' : 'Administrator';
+
+                    // Update form fields
+                    document.getElementById('username').value = user.username;
+                    document.getElementById('email').value = user.email;
+                } else {
+                    window.location.href = 'admin-login.html';
+                }
+            } catch (error) {
+                console.error('Failed to load profile:', error);
+                showToast('Failed to load profile', 'error');
+            }
+        }
+
+        // Update profile
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
+
+            try {
+                const response = await fetch(`${API_URL}/update-profile`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': sessionToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, email })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Profile updated successfully', 'success');
+
+                    // Update local storage
+                    const updatedUser = { ...user, username, email };
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
+
+                    // Reload profile
+                    setTimeout(() => loadProfile(), 1000);
+                } else {
+                    showToast(data.message || 'Failed to update profile', 'error');
+                }
+            } catch (error) {
+                console.error('Update error:', error);
+                showToast('Failed to update profile', 'error');
+            }
+        });
+
+        // Update password
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                showToast('Passwords do not match', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/change-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': sessionToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Password updated successfully', 'success');
+                    document.getElementById('passwordForm').reset();
+                } else {
+                    showToast(data.message || 'Failed to update password', 'error');
+                }
+            } catch (error) {
+                console.error('Password update error:', error);
+                showToast('Failed to update password', 'error');
+            }
+        });
+
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toastContainer');
+
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+
+            const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+
+            toast.innerHTML = `
+                <div class="toast-icon">${icon}</div>
+                <div class="toast-content">
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+            `;
+
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideOutRight 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Load recent activity
+        async function loadRecentActivity() {
+            try {
+                const response = await fetch(`${API_URL}/admin/activity-logs?limit=10`, {
+                    headers: {
+                        'Authorization': sessionToken
+                    }
+                });
+
+                const data = await response.json();
+                const activityDiv = document.getElementById('recentActivity');
+
+                if (data.success && data.logs && data.logs.length > 0) {
+                    activityDiv.innerHTML = data.logs.map(log => {
+                        const icons = {
+                            'LOGIN': '🔐',
+                            'ADMIN_ACTION': '⚙️',
+                            'USER_MANAGEMENT': '👥',
+                            'SETTINGS_UPDATE': '🔧'
+                        };
+                        const icon = icons[log.action] || '📋';
+
+                        return `
+                            <div class="activity-item">
+                                <div class="activity-icon">${icon}</div>
+                                <div class="activity-content">
+                                    <div class="activity-title">${log.action.replace(/_/g, ' ')}</div>
+                                    <div class="activity-time">${new Date(log.timestamp).toLocaleString()}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    activityDiv.innerHTML = '<p style="text-align: center; color: var(--text-tertiary); padding: var(--space-4);">No recent activity</p>';
+                }
+            } catch (error) {
+                console.error('Failed to load activity:', error);
+                document.getElementById('recentActivity').innerHTML = '<p style="text-align: center; color: var(--error); padding: var(--space-4);">Failed to load activity</p>';
+            }
+        }
+
+        // Initialize
+        loadProfile();
+        loadRecentActivity();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Axon AI - Advanced AI Assistant</title>
+    <meta name="description"
+        content="Axon AI - Your intelligent AI assistant with chat, voice, vision, and automation capabilities">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/design-system.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/liquid-glass.css">
+    <link rel="stylesheet" href="css/components.css">
+    <script src="js/theme.js"></script>
+
+    <style>
+        /* Home Page Specific Styles */
+        .home-container {
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: var(--space-4) var(--space-6);
+            background: var(--liquid-glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--liquid-glass-border);
+        }
+
+        .navbar-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: var(--space-8);
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            font-size: var(--text-2xl);
+            font-weight: var(--font-bold);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: transform var(--duration-fast) var(--ease-smooth);
+        }
+
+        .logo-section:hover {
+            transform: scale(1.05);
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: var(--space-8);
+            flex: 1;
+        }
+
+        .nav-menu {
+            display: flex;
+            margin-left: var(--space-10);
+            gap: var(--space-5);
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: var(--text-base);
+            font-weight: var(--font-medium);
+            transition: all var(--duration-normal) var(--ease-smooth);
+            position: relative;
+            padding: var(--space-2) var(--space-3);
+            border-radius: var(--radius-md);
+        }
+
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--liquid-glass-bg);
+            border-radius: var(--radius-md);
+            opacity: 0;
+            transition: opacity var(--duration-normal) var(--ease-smooth);
+            z-index: -1;
+        }
+
+        .nav-link:hover::before {
+            opacity: 1;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 2px;
+            background: var(--accent-gradient);
+            transition: width var(--duration-normal) var(--ease-smooth);
+            border-radius: 2px;
+        }
+
+        .nav-link:hover::after {
+            width: 80%;
+        }
+
+        .nav-link:active {
+            transform: translateY(0);
+        }
+
+        .nav-right {
+            display: flex;
+            gap: var(--space-3);
+            align-items: center;
+        }
+
+        .theme-toggle-nav {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            background: var(--liquid-glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--liquid-glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--duration-normal) var(--ease-smooth);
+            font-size: 1.2rem;
+        }
+
+        .theme-toggle-nav:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--accent-primary);
+            transform: rotate(180deg) scale(1.1);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Hero Section */
+        .hero-section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-20) var(--space-6);
+            position: relative;
+        }
+
+        .hero-content {
+            max-width: 900px;
+            text-align: center;
+            z-index: 1;
+        }
+
+        .hero-title {
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: var(--font-bold);
+            margin-bottom: var(--space-6);
+            background: linear-gradient(135deg, #ffffff 0%, #a78bfa 50%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient-shift 5s ease infinite;
+        }
+
+        @keyframes gradient-shift {
+
+            0%,
+            100% {
+                filter: hue-rotate(0deg);
+            }
+
+            50% {
+                filter: hue-rotate(20deg);
+            }
+        }
+
+        .hero-subtitle {
+            font-size: var(--text-xl);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-8);
+            line-height: var(--leading-relaxed);
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: var(--space-4);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Sections */
+        .section {
+            padding: var(--space-20) var(--space-6);
+            position: relative;
+        }
+
+        .section-content {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: var(--text-4xl);
+            font-weight: var(--font-bold);
+            text-align: center;
+            margin-bottom: var(--space-12);
+            color: var(--text-primary);
+        }
+
+        .section-subtitle {
+            font-size: var(--text-lg);
+            color: var(--text-secondary);
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto var(--space-12);
+        }
+
+        /* Services Grid */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-6);
+            margin-bottom: var(--space-8);
+        }
+
+        .service-card {
+            padding: var(--space-8);
+            text-align: center;
+        }
+
+        .service-icon {
+            font-size: 4rem;
+            margin-bottom: var(--space-4);
+            display: block;
+        }
+
+        .service-title {
+            font-size: var(--text-xl);
+            font-weight: var(--font-semibold);
+            margin-bottom: var(--space-3);
+            color: var(--text-primary);
+        }
+
+        .service-description {
+            color: var(--text-secondary);
+            line-height: var(--leading-relaxed);
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-6);
+        }
+
+        .feature-card {
+            padding: var(--space-6);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: var(--space-3);
+        }
+
+        .feature-title {
+            font-size: var(--text-lg);
+            font-weight: var(--font-semibold);
+            margin-bottom: var(--space-2);
+            color: var(--text-primary);
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            font-size: var(--text-sm);
+        }
+
+        /* About Section */
+        .about-content {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .about-text {
+            font-size: var(--text-lg);
+            color: var(--text-secondary);
+            line-height: var(--leading-relaxed);
+            margin-bottom: var(--space-6);
+        }
+
+        /* Contact Section */
+        .contact-form {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: var(--space-6);
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: var(--space-2);
+            font-weight: var(--font-medium);
+            color: var(--text-primary);
+        }
+
+        /* Footer */
+        .footer {
+            padding: var(--space-8) var(--space-6);
+            text-align: center;
+            border-top: 1px solid var(--border-primary);
+            background: var(--bg-secondary);
+        }
+
+        .footer-text {
+            color: var(--text-tertiary);
+            font-size: var(--text-sm);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: var(--space-16) var(--space-4);
+            }
+
+            .section {
+                padding: var(--space-12) var(--space-4);
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .services-grid,
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-menu {
+                display: none;
+            }
+
+            .navbar-content {
+                gap: var(--space-4);
+            }
+
+            .nav-left {
+                gap: var(--space-4);
+            }
+
+            .logo-section {
+                font-size: var(--text-xl);
+            }
+
+            .theme-toggle-nav {
+                width: 36px;
+                height: 36px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+    <link rel="icon" type="image/png" href="logo.png">
+</head>
+
+<body>
+    <!-- Theme Toggle -->
+    <button class="theme-toggle floating-toggle" aria-label="Toggle Theme">
+        <span class="theme-icon">☀️</span>
+    </button>
+
+    <!-- Liquid Background -->
+    <div class="liquid-background">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <div class="blob blob-4"></div>
+    </div>
+
+    <div class="home-container">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-content">
+                <div class="nav-left">
+                    <div class="logo-section" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+                        <img src="logo.png" alt="Axon AI" style="height: 32px; width: 32px;">
+                        <span>Axon AI</span>
+                    </div>
+                    <div class="nav-menu">
+                        <a href="#home" class="nav-link">Home</a>
+                        <a href="#services" class="nav-link">Services</a>
+                        <a href="#features" class="nav-link">Features</a>
+                        <a href="#about" class="nav-link">About</a>
+                        <a href="#contact" class="nav-link">Contact</a>
+                    </div>
+                </div>
+                <div class="nav-right">
+                    <button class="theme-toggle-nav" aria-label="Toggle Theme"
+                        onclick="document.querySelector('.theme-toggle.floating-toggle').click()">
+                        <span class="theme-icon">☀️</span>
+                    </button>
+                    <a href="/login" class="btn btn-secondary">Login</a>
+                    <a href="register.html" class="btn btn-primary liquid-button">Get Started</a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section id="home" class="hero-section animate-fade-in-up">
+            <div class="hero-content">
+                <h1 class="hero-title">Your Advanced AI Assistant</h1>
+                <p class="hero-subtitle">
+                    Experience the future of AI with Axon AI. Chat, voice commands, and intelligent automation - all in
+                    one powerful platform.
+                </p>
+                <div class="hero-buttons">
+                    <a href="register.html" class="btn btn-primary liquid-button"
+                        style="font-size: var(--text-lg); padding: var(--space-4) var(--space-8);">
+                        Start Free Trial
+                    </a>
+                    <a href="#services" class="btn btn-secondary"
+                        style="font-size: var(--text-lg); padding: var(--space-4) var(--space-8);">
+                        Learn More
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+        <section id="services" class="section">
+            <div class="section-content">
+                <h2 class="section-title">Powerful AI Services</h2>
+                <p class="section-subtitle">
+                    Comprehensive AI capabilities designed to enhance your productivity and creativity
+                </p>
+                <div class="services-grid">
+                    <div class="service-card liquid-glass-card">
+                        <span class="service-icon">💬</span>
+                        <h3 class="service-title">AI Chat</h3>
+                        <p class="service-description">
+                            Engage in intelligent conversations with our advanced AI chatbot.
+                            Get answers, insights, and assistance instantly.
+                        </p>
+                    </div>
+                    <div class="service-card liquid-glass-card">
+                        <span class="service-icon">🎙️</span>
+                        <h3 class="service-title">Voice Assistant</h3>
+                        <p class="service-description">
+                            Control your AI with natural voice commands. Hands-free operation
+                            with advanced speech recognition.
+                        </p>
+                    </div>
+                    <div class="service-card liquid-glass-card">
+                        <span class="service-icon">⚙️</span>
+                        <h3 class="service-title">Automation</h3>
+                        <p class="service-description">
+                            Automate repetitive tasks with intelligent workflows.
+                            Save time and boost productivity effortlessly.
+                        </p>
+                    </div>
+                    <div class="service-card liquid-glass-card">
+                        <span class="service-icon">🔍</span>
+                        <h3 class="service-title">Smart Search</h3>
+                        <p class="service-description">
+                            AI-powered intelligent search that understands context and intent.
+                            Get accurate results from web, documents, and knowledge bases.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="section" style="background: var(--bg-secondary);">
+            <div class="section-content">
+                <h2 class="section-title">Advanced Features</h2>
+                <p class="section-subtitle">
+                    Everything you need for a complete AI experience
+                </p>
+                <div class="features-grid">
+                    <div class="feature-card liquid-glass-card">
+                        <div class="feature-icon">🌐</div>
+                        <h3 class="feature-title">Multi-Language Support</h3>
+                        <p class="feature-description">
+                            Communicate in English, Hindi, and Gujarati with natural language understanding.
+                        </p>
+                    </div>
+                    <div class="feature-card liquid-glass-card">
+                        <div class="feature-icon">🔒</div>
+                        <h3 class="feature-title">Secure & Private</h3>
+                        <p class="feature-description">
+                            Your data is encrypted and protected with enterprise-grade security.
+                        </p>
+                    </div>
+                    <div class="feature-card liquid-glass-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3 class="feature-title">Lightning Fast</h3>
+                        <p class="feature-description">
+                            Get instant responses with our optimized AI processing engine.
+                        </p>
+                    </div>
+                    <div class="feature-card liquid-glass-card">
+                        <div class="feature-icon">📊</div>
+                        <h3 class="feature-title">Analytics Dashboard</h3>
+                        <p class="feature-description">
+                            Track your usage and insights with comprehensive analytics.
+                        </p>
+                    </div>
+                    <div class="feature-card liquid-glass-card">
+                        <div class="feature-icon">🎨</div>
+                        <h3 class="feature-title">Customizable</h3>
+                        <p class="feature-description">
+                            Personalize your experience with themes, settings, and preferences.
+                        </p>
+                    </div>
+                    <div class="feature-card liquid-glass-card">
+                        <div class="feature-icon">🔄</div>
+                        <h3 class="feature-title">Continuous Learning</h3>
+                        <p class="feature-description">
+                            Our AI improves over time, learning from interactions to serve you better.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="section">
+            <div class="section-content">
+                <h2 class="section-title">About Axon AI</h2>
+                <div class="about-content liquid-glass-card" style="padding: var(--space-10);">
+                    <p class="about-text">
+                        Axon AI is a cutting-edge artificial intelligence platform designed to revolutionize
+                        how you interact with technology. Built with the latest advancements in machine learning,
+                        natural language processing, and computer vision, Axon AI provides a comprehensive suite
+                        of AI-powered tools and services.
+                    </p>
+                    <p class="about-text">
+                        Our mission is to make advanced AI accessible to everyone, empowering individuals and
+                        businesses to achieve more through intelligent automation and assistance. Whether you're
+                        looking for a smart chatbot, voice assistant, or automation solution, Axon AI has you covered.
+                    </p>
+                    <p class="about-text">
+                        Join thousands of users who are already experiencing the future of AI technology.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact" class="section" style="background: var(--bg-secondary);">
+            <div class="section-content">
+                <h2 class="section-title">Get In Touch</h2>
+                <p class="section-subtitle">
+                    Have questions? We'd love to hear from you.
+                </p>
+                <form class="contact-form liquid-glass-card" style="padding: var(--space-8);" id="contactForm">
+                    <div class="form-group">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" id="name" name="name" class="input liquid-input" placeholder="Your name"
+                            required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" id="email" name="email" class="input liquid-input"
+                            placeholder="your@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="message" class="form-label">Message</label>
+                        <textarea id="message" name="message" class="input liquid-input" rows="5"
+                            placeholder="Your message..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary liquid-button" style="width: 100%;">
+                        Send Message
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p class="footer-text">
+                © 2025 Axon AI. All rights reserved. |
+                <a href="/login" style="color: var(--accent-primary);">Login</a> |
+                <a href="register.html" style="color: var(--accent-primary);">Register</a> |
+                <a href="admin-login.html" style="color: var(--accent-primary);">Admin</a> |
+                <a href="/privacy-policy" style="color: var(--accent-primary);">Privacy Policy</a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Contact form handling - Connected to backend API
+        document.getElementById('contactForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerText;
+
+            // Show loading state
+            submitBtn.innerText = 'Sending...';
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.7';
+
+            // Get form data
+            const formData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                message: document.getElementById('message').value
+            };
+
+            try {
+                const response = await fetch('/api/contact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Success
+                    alert('Thank you! ' + result.message);
+                    this.reset();
+                } else {
+                    // Error from server
+                    alert('Error: ' + (result.message || 'Failed to send message'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Connection error. Please try again later.');
+            } finally {
+                // Restore button state
+                submitBtn.innerText = originalBtnText;
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            }
+        });
+
+        // Add scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.service-card, .feature-card').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            card.style.transition = 'all 0.6s ease';
+            observer.observe(card);
+        });
+    </script>
+</body>
+
+</html>

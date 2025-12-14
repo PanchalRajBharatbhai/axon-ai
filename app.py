@@ -1,0 +1,1039 @@
+# -*- coding: utf-8 -*-
+"""
+Flask Backend API for Axon AI Web Interface
+Provides REST API and WebSocket support for the chat interface
+"""
+
+from flask import Flask, request, jsonify, send_from_directory, send_file
+from flask_socketio import SocketIO, emit
+from flask_cors import CORS
+from werkzeug.utils import secure_filename
+from web_database import WebDatabase
+from ai_integration import AIBridge
+from export_utils import ExportUtils
+from vision_ai import analyze_image
+from functools import wraps
+import os
+import smtplib
+from email.message import EmailMessage
+import datetime
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+
+# Initialize Flask app
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'axon-ai-secret-key-change-in-production'
+CORS(app)
+
+# Initialize SocketIO (will auto-detect best async mode)
+# Supports: eventlet, gevent, threading (in order of preference)
+socketio = SocketIO(app, cors_allowed_origins="*", logger=False, engineio_logger=False)
+
+# Initialize database and AI bridge
+db = WebDatabase()
+ai_bridge = AIBridge()
+
+# Store active sessions
+active_sessions = {}
+
+
+# ============================================================================
+# Static File Routes
+# ============================================================================
+
+@app.route('/')
+def index():
+    """Serve home page"""
+    return send_from_directory('static', 'index.html')
+
+@app.route('/login')
+def login_page():
+    """Serve login page"""
+    return send_from_directory('static', 'login.html')
+
+@app.route('/privacy-policy')
+def privacy_policy():
+    """Serve privacy policy page"""
+    return send_from_directory('static', 'privacy-policy.html')
+
+@app.route('/<path:path>')
+def serve_static(path):
+    """Serve static files"""
+    return send_from_directory('static', path)
+
+
+# ============================================================================
+# Admin Authentication Middleware
+# ============================================================================
+
+def admin_required(f):
+    """Decorator to require admin authentication"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        session_token = request.headers.get('Authorization')
+        
+        if not session_token:
+            return jsonify({'success': False, 'message': 'Not authenticated'}), 401
+        
+        session = db.verify_session(session_token)
+        
+        if not session['valid']:
+            return jsonify({'success': False, 'message': 'Invalid session'}), 401
+        
+        # Check if user is admin
+        user_result = db.get_user_by_id(session['user']['id'])
+        if not user_result['success'] or not user_result['user']['is_admin']:
+            return jsonify({'success': False, 'message': 'Admin access required'}), 403
+        
+        # Pass user info to the route
+        return f(session['user'], *args, **kwargs)
+    
+    return decorated_function
+
+
+# ============================================================================
+# Authentication API
+# ============================================================================
+
+@app.route('/api/register', methods=['POST'])
+def register():
+    """Register a new user"""
+    data = request.json
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+    
+    if not all([username, email, password]):
+        return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+    
+    result = db.create_user(username, email, password)
+    
+    if result['success']:
+        return jsonify(result), 201
+    else:
+        return jsonify(result), 400
+
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    """Login a user"""
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+    
+    if not all([username, password]):
+        return jsonify({'success': False, 'message': 'Missing credentials'}), 400
+    
+    result = db.verify_user(username, password)
+    
+    if result['success']:
+        # Create session
+        user_id = result['user']['id']
+        session_token = db.create_session(user_id)
+        
+        # Store in active sessions
+        active_sessions[session_token] = result['user']
+        
+        return jsonify({
+            'success': True,
+            'session_token': session_token,
+            'user': result['user']
+        }), 200
+    else:
+        return jsonify(result), 401
+
+
+@app.route('/api/admin/login', methods=['POST'])
+def admin_login():
+    """Admin login with email and password"""
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    
+    if not all([email, password]):
+        return jsonify({'success': False, 'message': 'Missing credentials'}), 400
+    
+    # Get user by email
+    user_result = db.get_user_by_email(email)
+    
+    if not user_result['success']:
+        return jsonify({'success': False, 'message': 'Invalid admin credentials'}), 401
+    
+    # Verify password
+    username = user_result['user']['username']
+    verify_result = db.verify_user(username, password)
+    
+    if not verify_result['success']:
+        return jsonify({'success': False, 'message': 'Invalid admin credentials'}), 401
+    
+    user = verify_result['user']
+    
+    # Check if user is admin
+    if not user.get('is_admin'):
+        return jsonify({'success': False, 'message': 'Invalid admin credentials'}), 403
+    
+    # Create session
+    user_id = user['id']
+    session_token = db.create_session(user_id)
+    
+    # Store in active sessions
+    active_sessions[session_token] = user
+    
+    # Log activity
+    db.log_activity(user_id, 'ADMIN_LOGIN', f'Admin logged in via email: {email}')
+    
+    return jsonify({
+        'success': True,
+        'session_token': session_token,
+        'user': user
+    }), 200
+
+
+@app.route('/api/admin/create-admin', methods=['POST'])
+def create_admin():
+    """Create a new admin account (SuperAdmin only)"""
+    session_token = request.headers.get('Authorization')
+    
+    if not session_token:
+        return jsonify({'success': False, 'message': 'Not authenticated'}), 401
+    
+    session = db.verify_session(session_token)
+    
+    if not session['valid']:
+        return jsonify({'success': False, 'message': 'Invalid session'}), 401
+    
+    # Get requester details
+    requester_id = session['user']['id']
+    user_result = db.get_user_by_id(requester_id)
+    
+    if not user_result['success'] or not user_result['user']['is_superadmin']:
+        return jsonify({'success': False, 'message': 'Unauthorized to create admin accounts'}), 403
+    
+    # Get new admin details
+    data = request.json
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+    
+    if not all([username, email, password]):
+        return jsonify({'success': False, 'message': 'Missing required fields: name, email, password'}), 400
+    
+    # Create admin user
+    result = db.create_admin_user(requester_id, username, email, password)
+    
+    if result['success']:
+        # Log activity
+        db.log_activity(requester_id, 'CREATE_ADMIN', f'Created admin account: {username}')
+        return jsonify(result), 201
+    else:
+        return jsonify(result), 400
+
+
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    """Logout a user"""
+    session_token = request.headers.get('Authorization')
+    
+    if session_token:
+        db.delete_session(session_token)
+        if session_token in active_sessions:
+            del active_sessions[session_token]
+        
+        return jsonify({'success': True, 'message': 'Logged out successfully'}), 200
+    else:
+        return jsonify({'success': False, 'message': 'No session token provided'}), 400
+
+
+@app.route('/api/user', methods=['GET'])
+def get_user():
+    """Get current user info"""
+    session_token = request.headers.get('Authorization')
+    
+    if not session_token:
+        return jsonify({'success': False, 'message': 'Not authenticated'}), 401
+    
+    session = db.verify_session(session_token)
+    
+    if session['valid']:
+        return jsonify({'success': True, 'user': session['user']}), 200
+    else:
+        return jsonify({'success': False, 'message': 'Invalid session'}), 401
+
+
+# ============================================================================
+# Chat History API
+# ============================================================================
+
+@app.route('/api/history', methods=['GET'])
+def get_history():
+    """Get chat history for current user"""
+    session_token = request.headers.get('Authorization')
+    
+    if not session_token:
+        return jsonify({'success': False, 'message': 'Not authenticated'}), 401
+    
+    session = db.verify_session(session_token)
+    
+    if session['valid']:
+        user_id = session['user']['id']
+        limit = request.args.get('limit', 50, type=int)
+        
+        history = db.get_chat_history(user_id, limit)
+        
+        return jsonify({'success': True, 'history': history}), 200
+    else:
+        return jsonify({'success': False, 'message': 'Invalid session'}), 401
+
+
+@app.route('/api/history', methods=['DELETE'])
+def clear_history():
+    """Clear chat history for current user"""
+    session_token = request.headers.get('Authorization')
+    
+    if not session_token:
+        return jsonify({'success': False, 'message': 'Not authenticated'}), 401
+    
+    session = db.verify_session(session_token)
+    
+    if session['valid']:
+        user_id = session['user']['id']
+        rows_deleted = db.clear_chat_history(user_id)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Cleared {rows_deleted} messages'
+        }), 200
+    else:
+        return jsonify({'success': False, 'message': 'Invalid session'}), 401
+
+
+# ============================================================================
+# Forgot Password & Profile Management API
+# ============================================================================
+
+@app.route('/api/forgot-password', methods=['POST'])
+def forgot_password():
+    """Verify email for password reset"""
+    data = request.json
+    email = data.get('email')
+    
+    if not email:
+        return jsonify({'success': False, 'message': 'Email required'}), 400
+    
+    result = db.get_user_by_email(email)
+    
+    if result['success']:
+        return jsonify({'success': True, 'message': 'Email verified'}), 200
+    else:
+        return jsonify({'success': False, 'message': 'Email not found'}), 404
+
+
+@app.route('/api/reset-password', methods=['POST'])
+def reset_password():
+    """Reset user password"""
+    data = request.json
+    email = data.get('email')
+    new_password = data.get('new_password')
+    
+    if not all([email, new_password]):
+        return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+    
+    # Get user by email
+    user_result = db.get_user_by_email(email)
+    
+    if user_result['success']:
+        user_id = user_result['user']['id']
+        # Update password
+        result = db.update_password(user_id, new_password)
+        return jsonify(result), 200
+    else:
+        return jsonify({'success': False, 'message': 'User not found'}), 404
+
+
+@app.route('/api/update-profile', methods=['POST'])
+def update_profile():
+    """Update user profile"""
+    session_token = request.headers.get('Authorization')
+    
+    if not session_token:
+        return jsonify({'success': False, 'message': 'Not authenticated'}), 401
+    
+    session = db.verify_session(session_token)
+    
+    if session['valid']:
+        data = request.json
+        user_id = session['user']['id']
+        username = data.get('username')
+        email = data.get('email')
+        
+        # Update user info in database
+        conn = db.db_path
+        import sqlite3
+        connection = sqlite3.connect(conn)
+        cursor = connection.cursor()
+        
+        try:
+            cursor.execute('''
+                UPDATE users SET username = ?, email = ?
+                WHERE id = ?
+            ''', (username, email, user_id))
+            connection.commit()
+            connection.close()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Profile updated successfully'
+            }), 200
+        except sqlite3.IntegrityError:
+            connection.close()
+            return jsonify({
+                'success': False,
+                'message': 'Username or email already exists'
+            }), 400
+    else:
+        return jsonify({'success': False, 'message': 'Invalid session'}), 401
+
+
+@app.route('/api/change-password', methods=['POST'])
+def change_password():
+    """Change user password"""
+    session_token = request.headers.get('Authorization')
+    
+    if not session_token:
+        return jsonify({'success': False, 'message': 'Not authenticated'}), 401
+    
+    session = db.verify_session(session_token)
+    
+    if session['valid']:
+        data = request.json
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+        
+        # Verify current password
+        username = session['user']['username']
+        verify_result = db.verify_user(username, current_password)
+        
+        if verify_result['success']:
+            user_id = session['user']['id']
+            result = db.update_password(user_id, new_password)
+            return jsonify(result), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Current password is incorrect'
+            }), 400
+    else:
+        return jsonify({'success': False, 'message': 'Invalid session'}), 401
+
+
+@app.route('/api/stats', methods=['GET'])
+def get_stats():
+    """Get user statistics"""
+    session_token = request.headers.get('Authorization')
+    
+    if not session_token:
+        return jsonify({'success': False, 'message': 'Not authenticated'}), 401
+    
+    session = db.verify_session(session_token)
+    
+    if session['valid']:
+        user_id = session['user']['id']
+        stats = db.get_user_stats(user_id)
+        
+        return jsonify({
+            'success': True,
+            'stats': stats
+        }), 200
+    else:
+        return jsonify({'success': False, 'message': 'Invalid session'}), 401
+
+
+@app.route('/api/delete-account', methods=['DELETE'])
+def delete_account():
+    """Delete user account"""
+    session_token = request.headers.get('Authorization')
+    
+    if not session_token:
+        return jsonify({'success': False, 'message': 'Not authenticated'}), 401
+    
+    session = db.verify_session(session_token)
+    
+    if session['valid']:
+        user_id = session['user']['id']
+        
+        # Delete user data
+        import sqlite3
+        conn = sqlite3.connect(db.db_path)
+        cursor = conn.cursor()
+        
+        # Delete chat history
+        cursor.execute('DELETE FROM chat_history WHERE user_id = ?', (user_id,))
+        # Delete sessions
+        cursor.execute('DELETE FROM sessions WHERE user_id = ?', (user_id,))
+        # Delete user
+        cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Account deleted successfully'
+        }), 200
+    else:
+        return jsonify({'success': False, 'message': 'Invalid session'}), 401
+
+
+# ============================================================================
+# Admin API Endpoints
+# ============================================================================
+
+@app.route('/api/admin/users', methods=['GET'])
+@admin_required
+def admin_get_users(current_user):
+    """Get all users (admin only)"""
+    include_inactive = request.args.get('include_inactive', 'true').lower() == 'true'
+    users = db.get_all_users(include_inactive=include_inactive)
+    
+    # Log activity
+    db.log_activity(current_user['id'], 'VIEW_USERS', f'Viewed {len(users)} users')
+    
+    return jsonify({'success': True, 'users': users}), 200
+
+
+@app.route('/api/admin/users/<int:user_id>', methods=['GET'])
+@admin_required
+def admin_get_user(current_user, user_id):
+    """Get specific user details (admin only)"""
+    result = db.get_user_by_id(user_id)
+    
+    if result['success']:
+        # Get user stats
+        stats = db.get_user_stats(user_id)
+        result['user']['stats'] = stats
+        
+        db.log_activity(current_user['id'], 'VIEW_USER', f'Viewed user {user_id}')
+        return jsonify(result), 200
+    else:
+        return jsonify(result), 404
+
+
+@app.route('/api/admin/users/<int:user_id>', methods=['PUT'])
+@admin_required
+def admin_update_user(current_user, user_id):
+    """Update user details (admin only)"""
+    data = request.json
+    username = data.get('username')
+    email = data.get('email')
+    
+    result = db.update_user(user_id, username=username, email=email)
+    
+    if result['success']:
+        db.log_activity(current_user['id'], 'UPDATE_USER', f'Updated user {user_id}')
+    
+    return jsonify(result), 200 if result['success'] else 400
+
+
+@app.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
+@admin_required
+def admin_delete_user(current_user, user_id):
+    """Delete user (admin only)"""
+    # Prevent self-deletion
+    if user_id == current_user['id']:
+        return jsonify({'success': False, 'message': 'Cannot delete your own account'}), 400
+    
+    # Prevent deletion of SuperAdmin
+    user_result = db.get_user_by_id(user_id)
+    if user_result['success'] and user_result['user'].get('is_superadmin'):
+        return jsonify({'success': False, 'message': 'Cannot delete SuperAdmin account'}), 403
+    
+    result = db.delete_user(user_id)
+    
+    if result['success']:
+        db.log_activity(current_user['id'], 'DELETE_USER', f'Deleted user {user_id}')
+    
+    return jsonify(result), 200
+
+
+@app.route('/api/admin/users/<int:user_id>/toggle-admin', methods=['POST'])
+@admin_required
+def admin_toggle_admin(current_user, user_id):
+    """Toggle admin status for user (admin only)"""
+    result = db.toggle_admin_status(user_id)
+    
+    if result['success']:
+        action = 'GRANT_ADMIN' if result['is_admin'] else 'REVOKE_ADMIN'
+        db.log_activity(current_user['id'], action, f'User {user_id}')
+    
+    return jsonify(result), 200 if result['success'] else 404
+
+
+@app.route('/api/admin/users/<int:user_id>/toggle-active', methods=['POST'])
+@admin_required
+def admin_toggle_active(current_user, user_id):
+    """Toggle active status for user (ban/unban) (admin only)"""
+    # Prevent self-ban
+    if user_id == current_user['id']:
+        return jsonify({'success': False, 'message': 'Cannot ban your own account'}), 400
+    
+    result = db.toggle_active_status(user_id)
+    
+    if result['success']:
+        action = 'UNBAN_USER' if result['is_active'] else 'BAN_USER'
+        db.log_activity(current_user['id'], action, f'User {user_id}')
+    
+    return jsonify(result), 200 if result['success'] else 404
+
+
+@app.route('/api/admin/analytics', methods=['GET'])
+@admin_required
+def admin_get_analytics(current_user):
+    """Get analytics data (admin only)"""
+    analytics = db.get_admin_analytics()
+    
+    db.log_activity(current_user['id'], 'VIEW_ANALYTICS', 'Viewed dashboard analytics')
+    
+    return jsonify({'success': True, 'analytics': analytics}), 200
+
+
+@app.route('/api/admin/activity-logs', methods=['GET'])
+@admin_required
+def admin_get_activity_logs(current_user):
+    """Get activity logs (admin only)"""
+    limit = request.args.get('limit', 100, type=int)
+    user_id = request.args.get('user_id', type=int)
+    
+    logs = db.get_activity_logs(limit=limit, user_id=user_id)
+    
+    return jsonify({'success': True, 'logs': logs}), 200
+
+
+@app.route('/api/admin/export/users', methods=['GET'])
+@admin_required
+def admin_export_users(current_user):
+    """Export users to Excel or CSV (admin only)"""
+    format_type = request.args.get('format', 'excel').lower()
+    
+    users = db.get_all_users(include_inactive=True)
+    
+    try:
+        if format_type == 'excel':
+            output = ExportUtils.export_users_to_excel(users)
+            db.log_activity(current_user['id'], 'EXPORT_USERS', 'Exported users to Excel')
+            return send_file(
+                output,
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                as_attachment=True,
+                download_name=f'users_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+            )
+        elif format_type == 'csv':
+            output = ExportUtils.export_users_to_csv(users)
+            db.log_activity(current_user['id'], 'EXPORT_USERS', 'Exported users to CSV')
+            return send_file(
+                output,
+                mimetype='text/csv',
+                as_attachment=True,
+                download_name=f'users_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            )
+        else:
+            return jsonify({'success': False, 'message': 'Invalid format. Use excel or csv'}), 400
+    except ImportError as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/admin/export/chat-history', methods=['GET'])
+@admin_required
+def admin_export_chat_history(current_user):
+    """Export chat history to Excel (admin only)"""
+    # Get all chat history with user info
+    import sqlite3
+    conn = sqlite3.connect(db.db_path)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT c.id, c.user_id, u.username, c.message, c.response, c.mode, c.language, c.timestamp
+        FROM chat_history c
+        JOIN users u ON c.user_id = u.id
+        ORDER BY c.timestamp DESC
+    ''')
+    
+    chat_data = cursor.fetchall()
+    conn.close()
+    
+    chat_history = [{
+        'id': row[0],
+        'user_id': row[1],
+        'username': row[2],
+        'message': row[3],
+        'response': row[4],
+        'mode': row[5],
+        'language': row[6],
+        'timestamp': row[7]
+    } for row in chat_data]
+    
+    try:
+        output = ExportUtils.export_chat_history_to_excel(chat_history)
+        db.log_activity(current_user['id'], 'EXPORT_CHAT_HISTORY', f'Exported {len(chat_history)} messages')
+        
+        from datetime import datetime
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=f'chat_history_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+        )
+    except ImportError as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/admin/export/activity-logs', methods=['GET'])
+@admin_required
+def admin_export_activity_logs(current_user):
+    """Export activity logs to Excel or CSV (admin only)"""
+    format_type = request.args.get('format', 'excel').lower()
+    
+    logs = db.get_activity_logs(limit=10000)  # Get more logs for export
+    
+    try:
+        if format_type == 'excel':
+            output = ExportUtils.export_activity_logs_to_excel(logs)
+            db.log_activity(current_user['id'], 'EXPORT_LOGS', 'Exported activity logs to Excel')
+            
+            from datetime import datetime
+            return send_file(
+                output,
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                as_attachment=True,
+                download_name=f'activity_logs_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+            )
+        elif format_type == 'csv':
+            output = ExportUtils.export_activity_logs_to_csv(logs)
+            db.log_activity(current_user['id'], 'EXPORT_LOGS', 'Exported activity logs to CSV')
+            
+            from datetime import datetime
+            return send_file(
+                output,
+                mimetype='text/csv',
+                as_attachment=True,
+                download_name=f'activity_logs_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            )
+        else:
+            return jsonify({'success': False, 'message': 'Invalid format. Use excel or csv'}), 400
+    except ImportError as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/admin/export/analytics', methods=['GET'])
+@admin_required
+def admin_export_analytics(current_user):
+    """Export analytics report to PDF (admin only)"""
+    analytics = db.get_admin_analytics()
+    
+    try:
+        output = ExportUtils.export_analytics_to_pdf(analytics)
+        db.log_activity(current_user['id'], 'EXPORT_ANALYTICS', 'Exported analytics to PDF')
+        
+        from datetime import datetime
+        return send_file(
+            output,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f'analytics_report_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+        )
+    except ImportError as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/admin/settings', methods=['GET'])
+@admin_required
+def admin_get_settings(current_user):
+    """Get all system settings (admin only)"""
+    settings = db.get_all_settings()
+    return jsonify({'success': True, 'settings': settings}), 200
+
+
+@app.route('/api/admin/settings', methods=['POST'])
+@admin_required
+def admin_update_settings(current_user):
+    """Update system settings (admin only)"""
+    data = request.json
+    key = data.get('key')
+    value = data.get('value')
+    
+    if not key:
+        return jsonify({'success': False, 'message': 'Setting key required'}), 400
+    
+    result = db.set_setting(key, value)
+    
+    if result['success']:
+        db.log_activity(current_user['id'], 'UPDATE_SETTING', f'Updated {key}')
+    
+    return jsonify(result), 200
+
+
+
+
+# ============================================================================
+# Contact Form API
+# ============================================================================
+
+@app.route('/api/contact', methods=['POST'])
+def contact_form():
+    """Handle contact form submissions"""
+    data = request.json
+    name = data.get('name')
+    email = data.get('email')
+    message = data.get('message')
+    
+    if not all([name, email, message]):
+        return jsonify({'success': False, 'message': 'All fields are required'}), 400
+    
+    # Calculate IST time
+    ist_now = datetime.datetime.utcnow() + datetime.timedelta(hours=5, minutes=30)
+    ist_time_str = ist_now.strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Email configuration (using environment variables)
+    EMAIL_ADDRESS = os.environ.get('EMAIL_ADDRESS')
+    EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD')
+    
+    if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
+        return jsonify({'success': False, 'message': 'Email configuration missing'}), 500
+    
+    try:
+        # Create email message
+        msg = EmailMessage()
+        msg['Subject'] = f'New Contact Form Message from {name}'
+        msg['From'] = EMAIL_ADDRESS
+        msg['To'] = 'rajpanchal342006@gmail.com'
+        msg['Reply-To'] = email
+        
+        content = f"""
+New message received from Axon AI Website Contact Form:
+
+Name: {name}
+Email: {email}
+
+Message:
+{message}
+
+------------------------------------------------
+Received at: {ist_time_str} (IST)
+"""
+        msg.set_content(content)
+        
+        # Send email
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            smtp.send_message(msg)
+            
+        # Log to activity log if user is logged in (optional)
+        # Store in database as backup (optional but recommended)
+        try:
+            conn = db.db_path
+            import sqlite3
+            connection = sqlite3.connect(conn)
+            cursor = connection.cursor()
+            
+            # Create contact_messages table if not exists (simple inline check)
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS contact_messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    email TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    timestamp DATETIME,
+                    status TEXT DEFAULT 'unread'
+                )
+            ''')
+            
+            cursor.execute('''
+                INSERT INTO contact_messages (name, email, message, timestamp)
+                VALUES (?, ?, ?, ?)
+            ''', (name, email, message, ist_now))
+            
+            connection.commit()
+            connection.close()
+        except Exception as db_error:
+            print(f"Database backup error: {db_error}")
+            # Don't fail the request if just DB storage fails, since email worked
+            
+        return jsonify({'success': True, 'message': 'Message sent successfully'}), 200
+        
+    except Exception as e:
+        print(f"Email Error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to send message over email. Please try again later.'}), 500
+
+
+# ============================================================================
+# Vision AI API
+# ============================================================================
+
+@app.route('/api/upload-image', methods=['POST'])
+def upload_image():
+    """Handle image upload and analysis"""
+    if 'image' not in request.files:
+        return jsonify({'success': False, 'message': 'No image file provided'}), 400
+    
+    file = request.files['image']
+    
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'No selected file'}), 400
+    
+    if file:
+        try:
+            # Save file temporarily
+            filename = secure_filename(file.filename)
+            temp_path = os.path.join('static', 'uploads', filename)
+            
+            # Ensure directory exists
+            os.makedirs(os.path.join('static', 'uploads'), exist_ok=True)
+            
+            file.save(temp_path)
+            
+            # Analyze image
+            result = analyze_image(temp_path, analysis_type='complete')
+            
+            # Clean up (optional, or keep for history)
+            # os.remove(temp_path)
+            
+            return jsonify({
+                'success': True, 
+                'analysis': result,
+                'image_url': f'/static/uploads/{filename}'
+            }), 200
+            
+        except Exception as e:
+            print(f"Image Upload Error: {e}")
+            return jsonify({'success': False, 'message': str(e)}), 500
+
+
+# ============================================================================
+# WebSocket Events for Real-time Chat
+# ============================================================================
+
+@socketio.on('connect')
+def handle_connect():
+    """Handle client connection"""
+    print('[+] Client connected')
+    emit('connected', {'message': 'Connected to Axon AI'})
+
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """Handle client disconnection"""
+    print('[-] Client disconnected')
+
+
+@socketio.on('authenticate')
+def handle_authenticate(data):
+    """Authenticate WebSocket connection"""
+    session_token = data.get('session_token')
+    
+    if not session_token:
+        emit('authenticated', {
+            'success': False,
+            'message': 'No session token provided'
+        })
+        return
+    
+    # Verify session
+    session = db.verify_session(session_token)
+    
+    if session['valid']:
+        emit('authenticated', {
+            'success': True,
+            'user': session['user']
+        })
+    else:
+        emit('authenticated', {
+            'success': False,
+            'message': 'Invalid session'
+        })
+
+
+@socketio.on('send_message')
+def handle_message(data):
+    """Handle incoming chat message"""
+    session_token = data.get('session_token')
+    message = data.get('message')
+    mode = data.get('mode', 'text')
+    
+    if not session_token or not message:
+        emit('error', {'message': 'Missing required data'})
+        return
+    
+    # Verify session
+    session = db.verify_session(session_token)
+    
+    if not session['valid']:
+        emit('error', {'message': 'Invalid session'})
+        return
+    
+    user_id = session['user']['id']
+    
+    # Process message with AI
+    try:
+        ai_result = ai_bridge.process_command(message, mode)
+        
+        # Save to chat history
+        db.add_chat_message(
+            user_id,
+            message,
+            ai_result['response'],
+            mode,
+            ai_result['language']
+        )
+        
+        # Send response back to client
+        emit('receive_message', {
+            'message': message,
+            'response': ai_result['response'],
+            'language': ai_result['language'],
+            'mode': mode,
+            'success': ai_result['success']
+        })
+    except Exception as e:
+        print(f"AI Processing Error: {e}")
+        emit('receive_message', {
+            'message': message,
+            'response': "I'm sorry, I encountered an error processing your request.",
+            'language': 'en',
+            'mode': mode,
+            'success': False
+        })
+
+
+# ============================================================================
+# Run Server
+# ============================================================================
+
+
+if __name__ == '__main__':
+    print("=" * 60)
+    print("AXON AI WEB SERVER")
+    print("=" * 60)
+    print("\n[+] Initializing server...")
+    
+    # Get port from environment variable (Render sets this) or default to 5000
+    port = int(os.environ.get('PORT', 5000))
+    
+    print(f"[+] Server starting at: http://localhost:{port}")
+    print("[+] Press Ctrl+C to stop\n")
+    print("=" * 60)
+    
+    try:
+        # For local development with python app.py
+        # For production, Gunicorn will import the app object directly
+        socketio.run(app, debug=True, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
+    except OSError as e:
+        if "address already in use" in str(e).lower():
+            print(f"\n[!] ERROR: Port {port} is already in use!")
+            print("[!] Please stop the existing server or use a different port.")
+        else:
+            print(f"\n[!] ERROR: {e}")
+        import sys
+        sys.exit(1)
+

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Axon AI</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/design-system.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/liquid-glass.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/theme.js"></script>
+    <link rel="icon" type="image/png" href="logo.png">
+</head>
+
+<body>
+    <!-- Liquid Background -->
+    <div class="liquid-background">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <div class="blob blob-4"></div>
+    </div>
+
+    <button class="theme-toggle floating-toggle" aria-label="Toggle Theme">
+        <span class="theme-icon">☀️</span>
+    </button>
+    <div class="container animate-fade-in-up">
+        <div class="auth-box liquid-glass-card">
+            <div class="logo">
+                <h1>⚡ Axon AI</h1>
+                <p>Create Account</p>
+            </div>
+
+            <div id="errorMessage" class="error-message"></div>
+            <div id="successMessage" class="success-message"></div>
+
+            <form id="registerForm" class="auth-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" class="input" placeholder="Choose a username"
+                        required autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" class="input" placeholder="Enter your email" required
+                        autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" class="input"
+                        placeholder="Create a strong password" required autocomplete="new-password">
+                    <div class="password-strength" style="margin-top: 10px;">
+                        <div id="passwordStrengthBar" class="strength-bar"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" class="input"
+                        placeholder="Confirm your password" required autocomplete="new-password">
+                </div>
+
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                    <input type="checkbox" id="terms" name="terms" required style="width: auto; margin: 0;">
+                    <label for="terms" style="margin: 0; font-size: 0.9em; color: var(--text-secondary);">
+                        I agree to the <a href="/privacy-policy" style="color: var(--accent-primary);">Privacy
+                            Policy</a>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <span id="registerBtnText">Create Account</span>
+                    <span id="registerSpinner" class="spinner" style="display: none;"></span>
+                </button>
+            </form>
+
+            <div class="auth-link">
+                Already have an account? <a href="/login">Sign in</a>
+            </div>
+
+            <div class="auth-link" style="margin-top: var(--space-4);">
+                <a href="/">
+                    <span>←</span>
+                    <span>Back to Home</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api';
+        const form = document.getElementById('registerForm');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const registerBtnText = document.getElementById('registerBtnText');
+        const registerSpinner = document.getElementById('registerSpinner');
+        const passwordInput = document.getElementById('password');
+        const passwordStrengthBar = document.getElementById('passwordStrengthBar');
+
+        // Password strength indicator
+        passwordInput.addEventListener('input', () => {
+            const password = passwordInput.value;
+            let strength = 0;
+
+            if (password.length >= 6) strength++;
+            if (password.length >= 10) strength++;
+            if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+            if (/\d/.test(password)) strength++;
+            if (/[^a-zA-Z\d]/.test(password)) strength++;
+
+            passwordStrengthBar.className = 'strength-bar';
+
+            if (strength <= 2) {
+                passwordStrengthBar.classList.add('weak');
+            } else if (strength <= 4) {
+                passwordStrengthBar.classList.add('medium');
+            } else {
+                passwordStrengthBar.classList.add('strong');
+            }
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = passwordInput.value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // Hide messages
+            errorMessage.classList.remove('show');
+            successMessage.classList.remove('show');
+
+            // Validate passwords match
+            if (password !== confirmPassword) {
+                errorMessage.textContent = 'Passwords do not match';
+                errorMessage.classList.add('show');
+                return;
+            }
+
+            // Show loading state
+            registerBtnText.style.display = 'none';
+            registerSpinner.style.display = 'inline-block';
+            form.querySelector('button[type="submit"]').disabled = true;
+
+            try {
+                const response = await fetch(`${API_URL}/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    successMessage.textContent = 'Account created successfully! Redirecting to login...';
+                    successMessage.classList.add('show');
+
+                    // Redirect to login after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    errorMessage.textContent = data.message || 'Registration failed. Please try again.';
+                    errorMessage.classList.add('show');
+
+                    // Reset button
+                    registerBtnText.style.display = 'inline';
+                    registerSpinner.style.display = 'none';
+                    form.querySelector('button[type="submit"]').disabled = false;
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                errorMessage.textContent = 'Connection error. Please try again.';
+                errorMessage.classList.add('show');
+
+                // Reset button
+                registerBtnText.style.display = 'inline';
+                registerSpinner.style.display = 'none';
+                form.querySelector('button[type="submit"]').disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Axon AI</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/design-system.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/admin.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/theme.js"></script>
+    <link rel="icon" type="image/png" href="logo.png">
+</head>
+
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar" id="adminSidebar">
+            <div class="admin-logo">
+                <div class="logo-icon">⚡</div>
+                <div class="logo-text">Axon AI</div>
+            </div>
+
+            <nav class="admin-nav custom-scrollbar">
+                <div class="nav-section">
+                    <div class="nav-section-title">Main</div>
+                    <a href="#" class="nav-item active" data-section="dashboard">
+                        <span class="nav-icon">📊</span>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                    <a href="#" class="nav-item" data-section="users">
+                        <span class="nav-icon">👥</span>
+                        <span class="nav-text">Users</span>
+                    </a>
+                    <a href="#" class="nav-item" data-section="analytics">
+                        <span class="nav-icon">📈</span>
+                        <span class="nav-text">Analytics</span>
+                    </a>
+                    <a href="#" class="nav-item" data-section="logs">
+                        <span class="nav-icon">�</span>
+                        <span class="nav-text">Activity Logs</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Settings</div>
+                    <a href="#" class="nav-item" id="profileLink">
+                        <span class="nav-icon">👤</span>
+                        <span class="nav-text">My Profile</span>
+                    </a>
+                    <a href="#" class="nav-item" data-section="settings">
+                        <span class="nav-icon">⚙️</span>
+                        <span class="nav-text">Settings</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Top Bar -->
+            <header class="admin-topbar">
+                <div class="topbar-left">
+                    <button class="sidebar-toggle-btn" id="sidebarToggle">
+                        <span>☰</span>
+                    </button>
+                    <h1 class="page-title" id="pageTitle">Dashboard</h1>
+                </div>
+
+                <div class="topbar-right">
+                    <div class="topbar-search">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="globalSearch" placeholder="Search dashboard, users, features...">
+                    </div>
+
+                    <button class="topbar-btn theme-toggle" aria-label="Toggle Theme">
+                        <span class="theme-icon">☀️</span>
+                    </button>
+
+                    <div class="dropdown" id="adminProfileMenu">
+                        <div class="admin-profile-trigger" id="adminProfileTrigger">
+                            <div class="avatar avatar-sm" id="userAvatar">A</div>
+                            <div class="admin-profile-info">
+                                <div class="admin-profile-name" id="adminUsername">Admin</div>
+                                <div class="admin-profile-role">Administrator</div>
+                            </div>
+                            <span>▼</span>
+                        </div>
+
+                        <div class="dropdown-menu">
+                            <a href="#" class="dropdown-item" id="dropdownProfileLink">
+                                <span>👤</span>
+                                <span>My Profile</span>
+                            </a>
+                            <a href="#" class="dropdown-item" id="dropdownSettingsLink">
+                                <span>⚙️</span>
+                                <span>Settings</span>
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a href="chat.html" class="dropdown-item">
+                                <span>💬</span>
+                                <span>Go to Chat</span>
+                            </a>
+                            <a href="#" class="dropdown-item" id="logoutBtn">
+                                <span>🚪</span>
+                                <span>Logout</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div class="admin-content custom-scrollbar">
+                <!-- Dashboard Section -->
+                <div class="content-section active" id="dashboard-section">
+                    <div class="stats-grid stagger-fade-in">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-icon">👥</div>
+                                <div class="stat-trend up">
+                                    <span>↑</span>
+                                    <span>12%</span>
+                                </div>
+                            </div>
+                            <div class="stat-value" id="totalUsers">0</div>
+                            <div class="stat-label">Total Users</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-icon">✅</div>
+                                <div class="stat-trend up">
+                                    <span>↑</span>
+                                    <span>8%</span>
+                                </div>
+                            </div>
+                            <div class="stat-value" id="activeUsers">0</div>
+                            <div class="stat-label">Active Users</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-icon">💬</div>
+                                <div class="stat-trend up">
+                                    <span>↑</span>
+                                    <span>24%</span>
+                                </div>
+                            </div>
+                            <div class="stat-value" id="totalMessages">0</div>
+                            <div class="stat-label">Total Messages</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-icon">📅</div>
+                                <div class="stat-trend up">
+                                    <span>↑</span>
+                                    <span>15%</span>
+                                </div>
+                            </div>
+                            <div class="stat-value" id="messagesToday">0</div>
+                            <div class="stat-label">Messages Today</div>
+                        </div>
+                    </div>
+
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3 class="chart-title">Message Trend</h3>
+                                <p class="chart-subtitle">Last 7 days</p>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="messageTrendChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3 class="chart-title">Language Distribution</h3>
+                                <p class="chart-subtitle">Usage by language</p>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="languageChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Section -->
+                <div class="content-section" id="users-section">
+                    <div class="table-card">
+                        <div class="table-header">
+                            <h3 class="table-title">User Management</h3>
+                            <div class="table-actions">
+                                <input type="text" id="userSearch" class="input" placeholder="Search users..."
+                                    style="width: 250px;">
+                                <button class="btn btn-primary btn-sm" id="refreshUsersBtn">
+                                    <span>🔄</span>
+                                    <span>Refresh</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-body">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th>Admin</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Last Login</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Section -->
+                <div class="content-section" id="analytics-section">
+                    <h2 style="margin-bottom: var(--space-6);">Analytics & Insights</h2>
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3 class="chart-title">User Registration Trend</h3>
+                                <p class="chart-subtitle">New users over time</p>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="registrationChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3 class="chart-title">Mode Usage</h3>
+                                <p class="chart-subtitle">Text vs Voice</p>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="modeChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Logs Section -->
+                <div class="content-section" id="logs-section">
+                    <div class="table-card">
+                        <div class="table-header">
+                            <h3 class="table-title">Activity Logs</h3>
+                            <div class="table-actions">
+                                <select id="logFilter" class="input" style="width: 200px;">
+                                    <option value="">All Activities</option>
+                                    <option value="LOGIN">Login</option>
+                                    <option value="ADMIN">Admin Actions</option>
+                                    <option value="USER">User Actions</option>
+                                </select>
+                                <button class="btn btn-primary btn-sm" id="refreshLogsBtn">
+                                    <span>🔄</span>
+                                    <span>Refresh</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-body">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>User</th>
+                                        <th>Action</th>
+                                        <th>Details</th>
+                                        <th>IP Address</th>
+                                        <th>Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="logsTableBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div class="content-section" id="settings-section">
+                    <h2 style="margin-bottom: var(--space-6);">System Settings</h2>
+                    <div class="profile-section">
+                        <h3 class="section-title">General Settings</h3>
+                        <div class="form-row">
+                            <div class="input-group">
+                                <label for="systemName">System Name</label>
+                                <input type="text" id="systemName" class="input" value="Axon AI">
+                            </div>
+                            <div class="input-group">
+                                <label for="defaultLanguage">Default Language</label>
+                                <select id="defaultLanguage" class="input">
+                                    <option value="en">English</option>
+                                    <option value="hi">Hindi</option>
+                                    <option value="gu">Gujarati</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" id="saveSettingsBtn">
+                            <span>💾</span>
+                            <span>Save Settings</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Scripts -->
+    <script src="js/admin.js"></script>
+</body>
+
+</html>

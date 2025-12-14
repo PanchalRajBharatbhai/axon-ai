@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Axon AI</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/design-system.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/liquid-glass.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/style.css">
+
+    <script src="js/theme.js"></script>
+
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background-image:
+                radial-gradient(circle at 30% 40%, var(--mesh-color-1) 0%, transparent 50%),
+                radial-gradient(circle at 70% 70%, var(--mesh-color-2) 0%, transparent 50%);
+            animation: gradientShift 15s ease infinite;
+            background-size: 200% 200%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .admin-login-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 450px;
+            padding: var(--space-6);
+        }
+
+        .admin-login-card {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--border-accent);
+            border-radius: var(--radius-2xl);
+            padding: var(--space-8);
+            box-shadow: var(--shadow-xl), 0 0 40px rgba(99, 102, 241, 0.2);
+        }
+
+        .admin-header {
+            text-align: center;
+            margin-bottom: var(--space-8);
+        }
+
+        .admin-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            background: var(--accent-gradient);
+            color: var(--text-primary);
+            font-size: var(--text-sm);
+            font-weight: var(--font-semibold);
+            border-radius: var(--radius-full);
+            margin-bottom: var(--space-4);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .logo {
+            font-size: var(--text-5xl);
+            font-weight: var(--font-bold);
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-3);
+        }
+
+        .admin-title {
+            font-size: var(--text-2xl);
+            font-weight: var(--font-semibold);
+            color: var(--text-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .admin-subtitle {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+        }
+
+        .info-box {
+            padding: var(--space-3) var(--space-4);
+            background-color: rgba(99, 102, 241, 0.1);
+            border-left: 3px solid var(--accent-primary);
+            border-radius: var(--radius-md);
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-6);
+        }
+
+        .error-message,
+        .success-message {
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--radius-md);
+            font-size: var(--text-sm);
+            margin-bottom: var(--space-4);
+            display: none;
+        }
+
+        .error-message {
+            background-color: var(--error-bg);
+            border-left: 3px solid var(--error);
+            color: var(--error);
+        }
+
+        .success-message {
+            background-color: var(--success-bg);
+            border-left: 3px solid var(--success);
+            color: var(--success);
+        }
+
+        .error-message.show,
+        .success-message.show {
+            display: block;
+            animation: fadeInDown var(--duration-normal) var(--ease-smooth);
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: var(--space-6);
+        }
+
+        .back-link a {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            color: var(--text-tertiary);
+            font-size: var(--text-sm);
+            text-decoration: none;
+            transition: color var(--duration-fast) var(--ease-smooth);
+        }
+
+        .back-link a:hover {
+            color: var(--accent-primary);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 834px) {
+            .admin-login-container {
+                padding: var(--space-5);
+            }
+
+            .logo {
+                font-size: var(--text-4xl);
+            }
+
+            .admin-title {
+                font-size: var(--text-xl);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .admin-login-container {
+                padding: var(--space-4);
+            }
+
+            .admin-login-card {
+                padding: var(--space-6);
+            }
+
+            .logo {
+                font-size: var(--text-3xl);
+            }
+
+            .admin-title {
+                font-size: var(--text-lg);
+            }
+
+            .admin-subtitle {
+                font-size: var(--text-xs);
+            }
+
+            .admin-badge {
+                font-size: 0.8125rem;
+                padding: var(--space-1) var(--space-3);
+            }
+
+            .info-box {
+                padding: var(--space-2) var(--space-3);
+                font-size: 0.8125rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .admin-login-container {
+                padding: var(--space-3);
+            }
+
+            .admin-login-card {
+                padding: var(--space-5);
+            }
+
+            .logo {
+                font-size: var(--text-2xl);
+            }
+
+            .admin-header {
+                margin-bottom: var(--space-6);
+            }
+        }
+
+        @media (max-width: 375px) {
+            .admin-login-container {
+                padding: var(--space-2);
+            }
+
+            .admin-login-card {
+                padding: var(--space-4);
+            }
+        }
+    </style>
+    <link rel="icon" type="image/png" href="logo.png">
+</head>
+
+<body>
+    <!-- Liquid Background -->
+    <div class="liquid-background">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <div class="blob blob-4"></div>
+    </div>
+
+    <!-- Theme Toggle -->
+    <button class="btn btn-ghost theme-toggle floating-toggle" aria-label="Toggle Theme">
+        <span class="theme-icon">☀️</span>
+    </button>
+    <div class="admin-login-container animate-fade-in-up">
+        <div class="admin-login-card liquid-glass-card">
+            <div class="admin-header">
+                <div class="admin-badge">
+                    <span>🔐</span>
+                    <span>Admin Access</span>
+                </div>
+                <div class="logo">⚡ Axon AI</div>
+                <h1 class="admin-title">Administrator Login</h1>
+                <p class="admin-subtitle">Secure access to admin panel</p>
+            </div>
+
+            <div class="info-box">
+                <strong>ℹ️ Admin Login</strong><br>
+                Use your admin email and password to access the admin panel.
+            </div>
+
+            <div id="errorMessage" class="error-message"></div>
+            <div id="successMessage" class="success-message"></div>
+
+            <form id="adminLoginForm">
+                <div class="input-group">
+                    <label for="email">Admin Email</label>
+                    <input type="email" id="email" name="email" class="input" placeholder="Enter your admin email"
+                        required autocomplete="email">
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" class="input" placeholder="Enter your password"
+                        required autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="btn btn-primary w-full">
+                    <span id="loginBtnText">Login as Admin</span>
+                    <span id="loginSpinner" class="spinner" style="display: none;"></span>
+                </button>
+            </form>
+
+            <div class="back-link">
+                <a href="/login">
+                    <span>←</span>
+                    <span>Back to User Login</span>
+                </a>
+            </div>
+
+            <div class="back-link" style="margin-top: var(--space-3);">
+                <a href="/">
+                    <span>←</span>
+                    <span>Back to Home</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api';
+        const form = document.getElementById('adminLoginForm');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const loginBtnText = document.getElementById('loginBtnText');
+        const loginSpinner = document.getElementById('loginSpinner');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            // Hide messages
+            errorMessage.classList.remove('show');
+            successMessage.classList.remove('show');
+
+            // Show loading state
+            loginBtnText.style.display = 'none';
+            loginSpinner.style.display = 'inline-block';
+            form.querySelector('button[type="submit"]').disabled = true;
+
+            try {
+                const response = await fetch(`${API_URL}/admin/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Store session token
+                    localStorage.setItem('session_token', data.session_token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+
+                    // Show success message
+                    successMessage.textContent = '✅ Login successful! Redirecting to admin panel...';
+                    successMessage.classList.add('show');
+
+                    // Redirect to admin panel
+                    setTimeout(() => {
+                        window.location.href = 'admin.html';
+                    }, 1500);
+                } else {
+                    // Show error
+                    errorMessage.textContent = `❌ ${data.message || 'Invalid admin credentials'}`;
+                    errorMessage.classList.add('show');
+
+                    // Reset button
+                    loginBtnText.style.display = 'inline';
+                    loginSpinner.style.display = 'none';
+                    form.querySelector('button[type="submit"]').disabled = false;
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorMessage.textContent = '❌ Connection error. Please try again.';
+                errorMessage.classList.add('show');
+
+                // Reset button
+                loginBtnText.style.display = 'inline';
+                loginSpinner.style.display = 'none';
+                form.querySelector('button[type="submit"]').disabled = false;
+            }
+        });
+
+        // Check if already logged in as admin
+        window.addEventListener('DOMContentLoaded', async () => {
+            const sessionToken = localStorage.getItem('session_token');
+
+            if (sessionToken) {
+                try {
+                    const response = await fetch(`${API_URL}/user`, {
+                        headers: {
+                            'Authorization': sessionToken
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success && data.user.is_admin) {
+                        // Already logged in as admin, redirect
+                        window.location.href = 'admin.html';
+                    }
+                } catch (error) {
+                    console.error('Session check failed:', error);
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

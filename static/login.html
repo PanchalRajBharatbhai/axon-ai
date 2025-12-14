@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Axon AI</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/design-system.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/liquid-glass.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/theme.js"></script>
+    <link rel="icon" type="image/png" href="logo.png">
+</head>
+
+<body>
+    <!-- Liquid Background -->
+    <div class="liquid-background">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <div class="blob blob-4"></div>
+    </div>
+
+    <button class="theme-toggle floating-toggle" aria-label="Toggle Theme">
+        <span class="theme-icon">☀️</span>
+    </button>
+    <div class="container animate-fade-in-up">
+        <div class="auth-box liquid-glass-card">
+            <div class="logo">
+                <h1>⚡ Axon AI</h1>
+                <p>Welcome Back</p>
+            </div>
+
+            <div id="errorMessage" class="error-message"></div>
+
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" class="input" placeholder="Enter your username"
+                        required autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" class="input" placeholder="Enter your password"
+                        required autocomplete="current-password">
+                </div>
+
+                <div class="form-footer"
+                    style="display: flex; justify-content: space-between; margin-bottom: var(--space-6); font-size: var(--text-sm); color: var(--text-secondary);">
+                    <label class="remember-me" style="display: flex; gap: var(--space-2); align-items: center;">
+                        <input type="checkbox" id="rememberMe">
+                        <span>Remember me</span>
+                    </label>
+                    <a href="forgot-password.html" class="auth-link" style="margin-top:0">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <span id="loginBtnText">Sign In</span>
+                    <span id="loginSpinner" class="spinner" style="display: none;"></span>
+                </button>
+            </form>
+
+            <div class="auth-link">
+                Don't have an account? <a href="register.html">Create one</a>
+            </div>
+
+            <div class="auth-link" style="margin-top: var(--space-4);">
+                <a href="/">
+                    <span>←</span>
+                    <span>Back to Home</span>
+                </a>
+            </div>
+
+            <div class="auth-link" style="margin-top: var(--space-2);">
+                <a href="admin-login.html">
+                    <span>👑</span>
+                    <span>Admin Login</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api';
+        const form = document.getElementById('loginForm');
+        const errorMessage = document.getElementById('errorMessage');
+        const loginBtnText = document.getElementById('loginBtnText');
+        const loginSpinner = document.getElementById('loginSpinner');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            // Hide error message
+            errorMessage.classList.remove('show');
+
+            // Show loading state
+            loginBtnText.style.display = 'none';
+            loginSpinner.style.display = 'inline-block';
+            form.querySelector('button[type="submit"]').disabled = true;
+
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Store session token
+                    localStorage.setItem('session_token', data.session_token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+
+                    // Redirect to chat
+                    window.location.href = 'chat.html';
+                } else {
+                    // Show error
+                    errorMessage.textContent = data.message || 'Login failed. Please try again.';
+                    errorMessage.classList.add('show');
+
+                    // Reset button
+                    loginBtnText.style.display = 'inline';
+                    loginSpinner.style.display = 'none';
+                    form.querySelector('button[type="submit"]').disabled = false;
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorMessage.textContent = 'Connection error. Please try again.';
+                errorMessage.classList.add('show');
+
+                // Reset button
+                loginBtnText.style.display = 'inline';
+                loginSpinner.style.display = 'none';
+                form.querySelector('button[type="submit"]').disabled = false;
+            }
+        });
+
+        // Check if already logged in
+        window.addEventListener('DOMContentLoaded', async () => {
+            const sessionToken = localStorage.getItem('session_token');
+
+            if (sessionToken) {
+                try {
+                    const response = await fetch(`${API_URL}/user`, {
+                        headers: {
+                            'Authorization': sessionToken
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Already logged in, redirect to chat
+                        window.location.href = 'chat.html';
+                    }
+                } catch (error) {
+                    console.error('Session check failed:', error);
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

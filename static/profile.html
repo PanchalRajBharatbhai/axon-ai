@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Axon AI</title>
+
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/design-system.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/components.css">
+    <script src="js/theme.js"></script>
+
+    <style>
+        body {
+            background-color: var(--bg-primary);
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Liquid Glass Mesh Background */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(circle at 15% 50%, var(--mesh-color-1) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, var(--mesh-color-2) 0%, transparent 50%),
+                radial-gradient(circle at 50% 80%, var(--mesh-color-3) 0%, transparent 50%);
+            animation: meshMove 20s ease-in-out infinite;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        @keyframes meshMove {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .profile-page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--space-6);
+        }
+
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-8);
+        }
+
+        .page-title {
+            font-size: var(--text-3xl);
+            font-weight: var(--font-bold);
+            color: var(--text-primary);
+        }
+
+        .profile-header-card {
+            background: var(--accent-gradient);
+            border-radius: var(--radius-2xl);
+            padding: var(--space-8);
+            margin-bottom: var(--space-6);
+            display: flex;
+            align-items: center;
+            gap: var(--space-6);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .profile-avatar-large {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-5xl);
+            font-weight: var(--font-bold);
+            color: var(--text-primary);
+            flex-shrink: 0;
+        }
+
+        .profile-header-info {
+            flex: 1;
+            color: white;
+            /* Ensure visibility on accent gradient */
+        }
+
+        .profile-name {
+            font-size: var(--text-3xl);
+            font-weight: var(--font-bold);
+            margin-bottom: var(--space-2);
+        }
+
+        .profile-email {
+            font-size: var(--text-lg);
+            opacity: 0.9;
+            margin-bottom: var(--space-4);
+        }
+
+        .profile-meta {
+            display: flex;
+            gap: var(--space-6);
+            font-size: var(--text-sm);
+            opacity: 0.8;
+        }
+
+        .tabs {
+            display: flex;
+            gap: var(--space-2);
+            margin-bottom: var(--space-6);
+            border-bottom: 1px solid var(--border-primary);
+        }
+
+        .tab-btn {
+            padding: var(--space-3) var(--space-6);
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: var(--text-base);
+            font-weight: var(--font-medium);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all var(--duration-fast) var(--ease-smooth);
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active {
+            color: var(--accent-primary);
+            border-bottom-color: var(--accent-primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeInUp var(--duration-normal) var(--ease-smooth);
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: var(--space-6);
+        }
+
+        .section-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
+        }
+
+        .section-title {
+            font-size: var(--text-xl);
+            font-weight: var(--font-semibold);
+            color: var(--text-primary);
+            margin-bottom: var(--space-6);
+            padding-bottom: var(--space-4);
+            border-bottom: 1px solid var(--border-secondary);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--space-4);
+        }
+
+        .stat-box {
+            padding: var(--space-4);
+            background-color: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+            text-align: center;
+            transition: all var(--duration-normal) var(--ease-smooth);
+        }
+
+        .stat-box:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-value {
+            font-size: var(--text-3xl);
+            font-weight: var(--font-bold);
+            color: var(--accent-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .stat-label {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+        }
+
+        .history-item {
+            padding: var(--space-4);
+            border-bottom: 1px solid var(--border-secondary);
+            transition: background-color var(--duration-fast) var(--ease-smooth);
+        }
+
+        .history-item:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-message {
+            font-size: var(--text-sm);
+            color: var(--text-primary);
+            margin-bottom: var(--space-1);
+        }
+
+        .history-time {
+            font-size: var(--text-xs);
+            color: var(--text-tertiary);
+        }
+
+        .danger-zone {
+            margin-top: var(--space-8);
+            padding: var(--space-6);
+            background-color: rgba(239, 68, 68, 0.05);
+            border: 1px solid var(--error);
+            border-radius: var(--radius-lg);
+        }
+
+        .danger-zone h3 {
+            color: var(--error);
+            margin-bottom: var(--space-4);
+        }
+
+        .error-message,
+        .success-message {
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--radius-md);
+            font-size: var(--text-sm);
+            margin-bottom: var(--space-4);
+            display: none;
+        }
+
+        .error-message {
+            background-color: var(--error-bg);
+            border-left: 3px solid var(--error);
+            color: var(--error);
+        }
+
+        .success-message {
+            background-color: var(--success-bg);
+            border-left: 3px solid var(--success);
+            color: var(--success);
+        }
+
+        .error-message.show,
+        .success-message.show {
+            display: block;
+            animation: fadeInDown var(--duration-normal) var(--ease-smooth);
+        }
+
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-header-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .tabs {
+                overflow-x: auto;
+            }
+        }
+    </style>
+    <link rel="icon" type="image/png" href="logo.png">
+</head>
+
+<body>
+    <div class="profile-page animate-fade-in-up">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">My Profile</h1>
+            <div style="display: flex; gap: var(--space-3);">
+                <button class="btn btn-ghost theme-toggle" aria-label="Toggle Theme">
+                    <span class="theme-icon">☀️</span>
+                </button>
+                <a href="chat.html" class="btn btn-ghost">
+                    <span>←</span>
+                    <span>Back to Chat</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Profile Header -->
+        <div class="profile-header-card">
+            <div class="profile-avatar-large" id="profileAvatar">U</div>
+            <div class="profile-header-info">
+                <h2 class="profile-name" id="profileName">User</h2>
+                <p class="profile-email" id="profileEmail">user@example.com</p>
+                <div class="profile-meta">
+                    <div>
+                        <span>📅</span>
+                        <span>Joined <span id="joinedDate">-</span></span>
+                    </div>
+                    <div>
+                        <span>🕒</span>
+                        <span>Last login <span id="lastLogin">-</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="info">Profile Info</button>
+            <button class="tab-btn" data-tab="stats">Statistics</button>
+            <button class="tab-btn" data-tab="security">Security</button>
+        </div>
+
+        <!-- Tab Content -->
+
+        <!-- Profile Info Tab -->
+        <div class="tab-content active" id="info-tab">
+            <div class="content-grid">
+                <div class="section-card">
+                    <h3 class="section-title">Personal Information</h3>
+
+                    <div id="profileMessage" class="success-message"></div>
+                    <div id="profileError" class="error-message"></div>
+
+                    <form id="updateProfileForm">
+                        <div class="input-group">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" class="input" placeholder="Enter username" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" class="input" placeholder="Enter email" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <span id="updateBtnText">💾 Save Changes</span>
+                            <span id="updateSpinner" class="spinner" style="display: none;"></span>
+                        </button>
+                    </form>
+                </div>
+
+                <div class="section-card">
+                    <h3 class="section-title">Account Status</h3>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-value">✅</div>
+                            <div class="stat-label">Active</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="accountAge">0</div>
+                            <div class="stat-label">Days</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Tab -->
+        <div class="tab-content" id="stats-tab">
+            <div class="content-grid">
+                <div class="section-card">
+                    <h3 class="section-title">Usage Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-value" id="totalMessages">0</div>
+                            <div class="stat-label">Total Messages</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="textMessages">0</div>
+                            <div class="stat-label">Text Mode</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="voiceMessages">0</div>
+                            <div class="stat-label">Voice Mode</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <h3 class="section-title">Recent Activity</h3>
+                    <div id="recentActivity">
+                        <p style="text-align: center; color: var(--text-tertiary); padding: var(--space-4);">
+                            Loading activity...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Tab -->
+        <div class="tab-content" id="security-tab">
+            <div class="section-card" style="max-width: 600px;">
+                <h3 class="section-title">Change Password</h3>
+
+                <div id="passwordMessage" class="success-message"></div>
+                <div id="passwordError" class="error-message"></div>
+
+                <form id="changePasswordForm">
+                    <div class="input-group">
+                        <label for="currentPassword">Current Password</label>
+                        <input type="password" id="currentPassword" class="input" placeholder="Enter current password"
+                            required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="newPassword">New Password</label>
+                        <input type="password" id="newPassword" class="input" placeholder="Enter new password" required
+                            minlength="6">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="confirmNewPassword">Confirm New Password</label>
+                        <input type="password" id="confirmNewPassword" class="input" placeholder="Confirm new password"
+                            required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <span id="passwordBtnText">🔒 Change Password</span>
+                        <span id="passwordSpinner" class="spinner" style="display: none;"></span>
+                    </button>
+                </form>
+
+                <div class="danger-zone">
+                    <h3>⚠️ Danger Zone</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: var(--space-4);">
+                        Once you delete your account, there is no going back. Please be certain.
+                    </p>
+                    <button id="deleteAccountBtn" class="btn btn-danger">
+                        🗑️ Delete Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        const API_URL = '/api';
+        const sessionToken = localStorage.getItem('session_token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        // Check authentication
+        if (!sessionToken) {
+            window.location.href = 'index.html';
+        }
+
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+
+                // Update buttons
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Update content
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(`${tab}-tab`).classList.add('active');
+            });
+        });
+
+        // Load profile data
+        async function loadProfile() {
+            try {
+                const response = await fetch(`${API_URL}/user`, {
+                    headers: {
+                        'Authorization': sessionToken
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const user = data.user;
+
+                    // Update display
+                    document.getElementById('profileName').textContent = user.username;
+                    document.getElementById('profileEmail').textContent = user.email;
+                    document.getElementById('profileAvatar').textContent = user.username[0].toUpperCase();
+
+                    // Update form
+                    document.getElementById('username').value = user.username;
+                    document.getElementById('email').value = user.email;
+                }
+            } catch (error) {
+                console.error('Failed to load profile:', error);
+            }
+        }
+
+        // Load stats
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_URL}/stats`, {
+                    headers: {
+                        'Authorization': sessionToken
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const stats = data.stats;
+                    document.getElementById('totalMessages').textContent = stats.total_messages || 0;
+                    document.getElementById('textMessages').textContent = stats.by_mode?.text || 0;
+                    document.getElementById('voiceMessages').textContent = stats.by_mode?.voice || 0;
+                }
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        // Update profile
+        document.getElementById('updateProfileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
+
+            const updateBtnText = document.getElementById('updateBtnText');
+            const updateSpinner = document.getElementById('updateSpinner');
+            updateBtnText.style.display = 'none';
+            updateSpinner.style.display = 'inline-block';
+
+            try {
+                const response = await fetch(`${API_URL}/update-profile`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': sessionToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, email })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Profile updated successfully', 'success');
+
+                    // Update local storage
+                    const updatedUser = { ...user, username, email };
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
+
+                    setTimeout(() => loadProfile(), 1000);
+                } else {
+                    showToast(data.message || 'Failed to update profile', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to update profile', 'error');
+            } finally {
+                updateBtnText.style.display = 'inline';
+                updateSpinner.style.display = 'none';
+            }
+        });
+
+        // Change password
+        document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+
+            if (newPassword !== confirmNewPassword) {
+                showToast('Passwords do not match', 'error');
+                return;
+            }
+
+            const passwordBtnText = document.getElementById('passwordBtnText');
+            const passwordSpinner = document.getElementById('passwordSpinner');
+            passwordBtnText.style.display = 'none';
+            passwordSpinner.style.display = 'inline-block';
+
+            try {
+                const response = await fetch(`${API_URL}/change-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': sessionToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Password changed successfully', 'success');
+                    document.getElementById('changePasswordForm').reset();
+                } else {
+                    showToast(data.message || 'Failed to change password', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to change password', 'error');
+            } finally {
+                passwordBtnText.style.display = 'inline';
+                passwordSpinner.style.display = 'none';
+            }
+        });
+
+        // Delete account
+        document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
+            if (!confirm('Are you absolutely sure? This action cannot be undone!')) return;
+            if (!confirm('This will permanently delete all your data. Continue?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/delete-account`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': sessionToken
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Account deleted successfully', 'success');
+                    setTimeout(() => {
+                        localStorage.clear();
+                        window.location.href = 'index.html';
+                    }, 2000);
+                } else {
+                    showToast(data.message || 'Failed to delete account', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to delete account', 'error');
+            }
+        });
+
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+            toast.innerHTML = `
+                <div class="toast-icon">${icon}</div>
+                <div class="toast-content">
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+            `;
+            toastContainer.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideOutRight 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Load recent activity
+        async function loadRecentActivity() {
+            try {
+                const response = await fetch(`${API_URL}/chat-history?limit=10`, {
+                    headers: {
+                        'Authorization': sessionToken
+                    }
+                });
+
+                const data = await response.json();
+                const activityDiv = document.getElementById('recentActivity');
+
+                if (data.success && data.history && data.history.length > 0) {
+                    activityDiv.innerHTML = data.history.map(item => `
+                        <div class="history-item">
+                            <div class="history-message">
+                                <strong>${item.mode === 'voice' ? '🎙️' : '💬'}</strong> ${item.message.substring(0, 60)}${item.message.length > 60 ? '...' : ''}
+                            </div>
+                            <div class="history-time">${new Date(item.timestamp).toLocaleString()}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    activityDiv.innerHTML = '<p style="text-align: center; color: var(--text-tertiary); padding: var(--space-4);">No recent activity</p>';
+                }
+            } catch (error) {
+                console.error('Failed to load activity:', error);
+                document.getElementById('recentActivity').innerHTML = '<p style="text-align: center; color: var(--error); padding: var(--space-4);">Failed to load activity</p>';
+            }
+        }
+
+        // Initialize
+        loadProfile();
+        loadStats();
+        loadRecentActivity();
+    </script>
+</body>
+
+</html>

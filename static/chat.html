@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - Axon AI</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/design-system.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/chat.css">
+    <script src="js/theme.js"></script>
+    <link rel="icon" type="image/png" href="logo.png">
+</head>
+
+<body>
+    <div class="chat-container">
+        <!-- Main Chat Area -->
+        <main class="chat-main">
+            <!-- Header -->
+            <header class="chat-header">
+                <div class="chat-header-left">
+                    <h1 class="chat-title">⚡ Axon AI Assistant</h1>
+                </div>
+
+                <div class="chat-header-right">
+                    <button class="header-btn" id="newChatBtn" title="New Chat">
+                        <span>➕</span>
+                    </button>
+
+                    <button class="header-btn theme-toggle" title="Toggle Theme">
+                        <span class="theme-icon">☀️</span>
+                    </button>
+
+                    <button class="header-btn" id="clearChatBtn" title="Clear Chat">
+                        <span>🗑️</span>
+                    </button>
+
+                    <div class="user-menu dropdown" id="userMenu">
+                        <div class="user-menu-trigger" id="userMenuTrigger">
+                            <div class="avatar avatar-sm" id="userAvatar">U</div>
+                            <span id="username">User</span>
+                            <span>▼</span>
+                        </div>
+
+                        <div class="dropdown-menu" id="userDropdown">
+                            <a href="profile.html" class="dropdown-item">
+                                <span>👤</span>
+                                <span>Profile</span>
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a href="admin.html" class="dropdown-item" id="adminPanelLink" style="display: none;">
+                                <span>🔐</span>
+                                <span>Go to Admin Panel</span>
+                            </a>
+                            <a href="#" class="dropdown-item" id="logoutBtn">
+                                <span>🚪</span>
+                                <span>Logout</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Messages Area -->
+            <div class="chat-messages custom-scrollbar" id="chatMessages">
+                <!-- Empty State -->
+                <div class="chat-empty-state" id="emptyState">
+                    <div class="empty-state-icon">⚡</div>
+                    <h2 class="empty-state-title">Welcome to Axon AI</h2>
+                    <p class="empty-state-subtitle">Your intelligent assistant is ready to help</p>
+
+                    <div class="suggestion-cards">
+                        <div class="suggestion-card" data-prompt="What can you help me with?">
+                            <div class="suggestion-icon">💡</div>
+                            <div class="suggestion-title">Get Started</div>
+                            <div class="suggestion-text">Learn what I can do for you</div>
+                        </div>
+
+                        <div class="suggestion-card" data-prompt="Tell me a joke">
+                            <div class="suggestion-icon">😄</div>
+                            <div class="suggestion-title">Have Fun</div>
+                            <div class="suggestion-text">Let's lighten the mood</div>
+                        </div>
+
+                        <div class="suggestion-card" data-prompt="Help me with coding">
+                            <div class="suggestion-icon">💻</div>
+                            <div class="suggestion-title">Code Help</div>
+                            <div class="suggestion-text">Get coding assistance</div>
+                        </div>
+
+                        <div class="suggestion-card" data-prompt="What's the weather like?">
+                            <div class="suggestion-icon">🌤️</div>
+                            <div class="suggestion-title">Weather</div>
+                            <div class="suggestion-text">Check current weather</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages will be added here -->
+            </div>
+
+            <!-- Input Area -->
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <!-- Text Mode Input -->
+                    <div class="chat-input-box" id="textModeInput">
+                        <textarea id="chatInput" class="chat-input" placeholder="Type your message..."
+                            rows="1"></textarea>
+
+                        <div class="input-actions">
+                            <!-- Hidden file input -->
+                            <input type="file" id="imageInput" accept="image/*" style="display: none;">
+
+                            <button class="input-action-btn" id="uploadBtn" title="Upload Image">
+                                <span>📎</span>
+                            </button>
+
+                            <button class="input-action-btn" id="voiceBtn" title="Voice Input">
+                                <span>🎙️</span>
+                            </button>
+
+                            <button class="input-action-btn send-btn" id="sendBtn" disabled>
+                                <span>➤</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Image Preview Area -->
+                    <div id="imagePreviewContainer" class="image-preview-container" style="display: none;">
+                        <div class="preview-wrapper">
+                            <img id="imagePreview" src="" alt="Preview">
+                            <button id="removeImageBtn" class="remove-image-btn">×</button>
+                        </div>
+                    </div>
+
+                    <!-- Voice Mode Input -->
+                    <div class="voice-mode-container" id="voiceModeInput" style="display: none;">
+                        <!-- Voice UI iframe container -->
+                        <div class="voice-ui-overlay" id="voiceUIOverlay" style="display: none;">
+                            <iframe src="voice-ui.html" id="voiceUIFrame" frameborder="0"
+                                style="width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; z-index: 9999; border: none;">
+                            </iframe>
+                        </div>
+                    </div>
+
+                    <div class="mode-toggle">
+                        <button class="mode-btn active" data-mode="text">
+                            <span>💬</span>
+                            <span>Text</span>
+                        </button>
+                        <button class="mode-btn" data-mode="voice">
+                            <span>🎙️</span>
+                            <span>Voice</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="js/chat.js"></script>
+</body>
+
+</html>

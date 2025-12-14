@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Interaction - Axon AI</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ============================================================================
+           VOICE INTERACTION UI - PREMIUM DARK THEME (V2.0)
+           ============================================================================ */
+
+        :root {
+            /* Colors */
+            --bg-deep: #050505;
+            --bg-gradient-start: #1a1a2e;
+            --bg-gradient-end: #0a0a14;
+            --accent-primary: #FFB84D;
+            --accent-glow: rgba(255, 184, 77, 0.4);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+
+            /* Glassmorphism */
+            --glass-bg: rgba(20, 20, 20, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-blur: blur(24px);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+
+            /* Animation details */
+            --ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at center, var(--bg-gradient-start) 0%, var(--bg-deep) 100%);
+            position: relative;
+            color: var(--text-primary);
+        }
+
+        /* Subtle animated gradient overlay */
+        .gradient-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 60%);
+            animation: breathe 8s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes breathe {
+
+            0%,
+            100% {
+                opacity: 0.4;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.7;
+                transform: scale(1.05);
+            }
+        }
+
+        /* Canvas for particle animation */
+        #particleCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+        }
+
+        /* Main container */
+        .voice-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            justify-content: center;
+            z-index: 10;
+            padding: 0;
+        }
+
+        /* Settings icon */
+        .settings-icon {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            width: 44px;
+            height: 44px;
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.4s var(--ease-out-quart);
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            z-index: 20;
+        }
+
+        .settings-icon:hover {
+            color: var(--text-primary);
+            background: rgba(40, 40, 40, 0.6);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: rotate(45deg) scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
+        }
+
+        /* Response container - Right Sidebar */
+        .response-container {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 380px;
+            height: 100vh;
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border-left: 1px solid var(--glass-border);
+            box-shadow: -8px 0 32px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            padding: 6rem 2rem 2rem;
+            z-index: 15;
+            overflow-y: auto;
+            transition: transform 0.4s var(--ease-out-quart);
+        }
+
+        .response-container.hidden {
+            transform: translateX(100%);
+        }
+
+        /* Sidebar toggle button */
+        .sidebar-toggle {
+            position: fixed;
+            top: 50%;
+            right: 380px;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 80px;
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-right: none;
+            border-radius: 8px 0 0 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 14;
+            transition: all 0.4s var(--ease-out-quart);
+            color: var(--text-secondary);
+            font-size: 1.25rem;
+        }
+
+        .sidebar-toggle:hover {
+            background: rgba(40, 40, 40, 0.6);
+            color: var(--text-primary);
+        }
+
+        .sidebar-toggle.hidden {
+            right: 0;
+        }
+
+        /* AI response display */
+        .ai-response {
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-weight: 400;
+            letter-spacing: 0;
+            line-height: 1.6;
+            text-align: left;
+            opacity: 0.95;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Transcription display */
+        .transcription {
+            color: var(--accent-primary);
+            font-size: 0.95rem;
+            font-weight: 400;
+            letter-spacing: 0;
+            text-align: left;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.5s var(--ease-out-quart);
+            font-style: italic;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 184, 77, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid var(--accent-primary);
+        }
+
+        .transcription.visible {
+            opacity: 0.9;
+            transform: translateY(0);
+        }
+
+        /* Status text */
+        .status-text {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            text-align: left;
+            padding: 0.5rem 1rem;
+            transition: all 0.4s var(--ease-out-quart);
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+        }
+
+        .status-text.listening {
+            color: var(--accent-primary);
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        /* Center section for microphone visualization */
+        .center-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        /* Premium microphone ball visualization */
+        .mic-visualization {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 184, 77, 0.3), rgba(255, 184, 77, 0.05));
+            border: 2px solid rgba(255, 184, 77, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: all 0.4s var(--ease-out-quart);
+            box-shadow: 0 0 40px rgba(255, 184, 77, 0.2),
+                inset 0 0 40px rgba(255, 184, 77, 0.1);
+        }
+
+        .mic-visualization::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle at center, transparent 40%, rgba(255, 184, 77, 0.1) 100%);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
+        .mic-visualization.active {
+            background: radial-gradient(circle at 30% 30%, rgba(255, 184, 77, 0.5), rgba(255, 184, 77, 0.1));
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 60px rgba(255, 184, 77, 0.4),
+                inset 0 0 60px rgba(255, 184, 77, 0.2);
+        }
+
+        .mic-visualization .mic-icon-center {
+            font-size: 4rem;
+            filter: drop-shadow(0 0 20px rgba(255, 184, 77, 0.6));
+            transition: all 0.3s var(--ease-out-quart);
+        }
+
+        /* Button container - moved to bottom */
+        .button-container {
+            position: fixed;
+            bottom: 3rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 2.5rem;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+        }
+
+        /* Base button styles */
+        .voice-btn {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.4s var(--ease-out-quart);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            outline: none;
+            box-shadow: var(--glass-shadow);
+        }
+
+        .voice-btn:hover {
+            background: rgba(50, 50, 50, 0.5);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .voice-btn:active {
+            transform: translateY(-1px) scale(0.98);
+        }
+
+        /* Microphone button */
+        .mic-btn {
+            width: 88px;
+            height: 88px;
+        }
+
+        /* "Living" Mic Button Animations */
+        /* Radar rings for listening state */
+        .mic-btn.active::before,
+        .mic-btn.active::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 1px solid var(--accent-primary);
+            opacity: 0;
+            z-index: -1;
+        }
+
+        .mic-btn.active::before {
+            animation: radarRipple 2s linear infinite;
+        }
+
+        .mic-btn.active::after {
+            animation: radarRipple 2s linear infinite 1s;
+            /* Delayed secondary ring */
+        }
+
+        @keyframes radarRipple {
+            0% {
+                width: 100%;
+                height: 100%;
+                opacity: 0.6;
+                border-width: 2px;
+            }
+
+            100% {
+                width: 250%;
+                height: 250%;
+                opacity: 0;
+                border-width: 0px;
+            }
+        }
+
+        .mic-btn.active {
+            background: rgba(255, 184, 77, 0.1);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 30px var(--accent-glow), inset 0 0 20px rgba(255, 184, 77, 0.1);
+        }
+
+        .mic-btn.active .mic-icon {
+            color: var(--accent-primary);
+            filter: drop-shadow(0 0 8px var(--accent-glow));
+            transform: scale(1.1);
+        }
+
+        /* Cancel button */
+        .cancel-btn {
+            width: 60px;
+            height: 60px;
+        }
+
+        .cancel-btn:hover {
+            background: rgba(220, 38, 38, 0.15);
+            border-color: rgba(220, 38, 38, 0.4);
+            box-shadow: 0 0 15px rgba(220, 38, 38, 0.2);
+        }
+
+        .cancel-btn:hover .cancel-icon {
+            color: #ef4444;
+        }
+
+        /* Icons */
+        .mic-icon {
+            font-size: 2.25rem;
+            color: #ffffff;
+            transition: all 0.3s var(--ease-out-quart);
+            /* Ensure emoji renders crisply */
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+
+        .cancel-icon {
+            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.8);
+            transition: all 0.3s ease;
+        }
+
+        /* Loading indicator styling */
+        .loading-indicator {
+            display: none;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+        }
+
+        /* Simple 3-dot typing animation */
+        .loading-dots::after {
+            content: ' .';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+
+        @keyframes dots {
+
+            0%,
+            100% {
+                content: ' .';
+            }
+
+            40% {
+                content: ' ..';
+            }
+
+            60% {
+                content: ' ...';
+            }
+
+            80%,
+            100% {
+                content: ' ';
+            }
+        }
+
+        .loading-indicator.visible {
+            display: block;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .response-container {
+                width: 320px;
+            }
+
+            .sidebar-toggle {
+                right: 320px;
+            }
+
+            .sidebar-toggle.hidden {
+                right: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .response-container {
+                width: 100%;
+                height: 40vh;
+                max-height: 400px;
+                top: auto;
+                bottom: 0;
+                right: 0;
+                left: 0;
+                border-left: none;
+                border-top: 1px solid var(--glass-border);
+                box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
+                padding: 2rem 1.5rem;
+            }
+
+            .response-container.hidden {
+                transform: translateY(100%);
+            }
+
+            .sidebar-toggle {
+                top: auto;
+                bottom: 40vh;
+                right: 50%;
+                transform: translateX(50%);
+                width: 80px;
+                height: 40px;
+                border-radius: 8px 8px 0 0;
+                border-right: 1px solid var(--glass-border);
+                border-bottom: none;
+            }
+
+            .sidebar-toggle.hidden {
+                bottom: 0;
+                right: 50%;
+            }
+
+            .ai-response {
+                font-size: 1rem;
+            }
+
+            .mic-btn {
+                width: 76px;
+                height: 76px;
+            }
+
+            .cancel-btn {
+                width: 52px;
+                height: 52px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .response-container {
+                max-height: 50vh;
+            }
+
+            .ai-response {
+                font-size: 0.95rem;
+            }
+
+            .button-container {
+                gap: 1.5rem;
+            }
+
+            .mic-btn {
+                width: 68px;
+                height: 68px;
+            }
+
+            .cancel-btn {
+                width: 48px;
+                height: 48px;
+            }
+        }
+    </style>
+    <link rel="icon" type="image/png" href="logo.png">
+</head>
+
+<body>
+    <!-- Gradient overlay -->
+    <div class="gradient-overlay"></div>
+
+    <!-- Particle canvas -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Voice interaction container -->
+    <div class="voice-container">
+        <!-- Settings icon -->
+
+
+        <!-- Sidebar Toggle Button -->
+        <button class="sidebar-toggle" id="sidebarToggle" title="Toggle Sidebar">
+            <span id="toggleIcon">◀</span>
+        </button>
+
+
+
+        <!-- Buttons - Fixed at bottom -->
+        <div class="button-container">
+            <button class="voice-btn cancel-btn" id="cancelBtn" title="Close">
+                <span class="cancel-icon">✕</span>
+            </button>
+
+            <button class="voice-btn mic-btn" id="micBtn" title="Start listening">
+                <span class="mic-icon">🎙️</span>
+            </button>
+        </div>
+
+        <!-- Response container - Right Sidebar -->
+        <div class="response-container" id="responseContainer">
+            <div class="status-text" id="statusText">Tap microphone to speak</div>
+            <div class="transcription" id="transcription"></div>
+            <div class="loading-indicator" id="loadingIndicator">Thinking<span class="loading-dots"></span></div>
+            <div class="ai-response" id="aiResponse"></div> <!-- Empty initially for typewriter -->
+        </div>
+    </div>
+
+    <!-- Socket.IO Client -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+    <script>
+        /* ============================================================================
+           ENHANCED PARTICLE SYSTEM (Depth-of-Field + Fluid Motion)
+           ============================================================================ */
+
+        class ParticleSystem {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.particles = [];
+                this.audioLevel = 0;
+                this.targetAudioLevel = 0;
+                this.isListening = false;
+
+                // config - Optimized
+                this.particleCount = window.innerWidth < 768 ? 150 : 300; // Reduced for performance
+                this.baseRadius = 130;  // Slightly larger sphere
+                this.colors = [
+                    { r: 255, g: 200, b: 100, weight: 0.2 },
+                    { r: 255, g: 184, b: 77, weight: 0.3 },
+                    { r: 255, g: 140, b: 0, weight: 0.2 },
+                    { r: 100, g: 149, b: 237, weight: 0.05 }, // Subtle cool accent (Cornflower Blue)
+                    { r: 255, g: 255, b: 255, weight: 0.25 }
+                ];
+
+                this.resize();
+                this.init();
+                this.animate();
+
+                window.addEventListener('resize', () => this.resize());
+            }
+
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                this.centerX = this.canvas.width / 2;
+                this.centerY = this.canvas.height / 2;
+            }
+
+            init() {
+                this.particles = [];
+                for (let i = 0; i < this.particleCount; i++) {
+                    this.particles.push(this.createParticle());
+                }
+            }
+
+            createParticle() {
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+
+                // Weighted random color
+                let random = Math.random();
+                let color = this.colors[0];
+                let cumulative = 0;
+
+                for (let c of this.colors) {
+                    cumulative += c.weight;
+
+                    if (random <= cumulative) {
+                        color = c;
+                        break;
+                    }
+                }
+
+                return {
+                    theta,
+                    phi,
+                    baseTheta: theta,
+                    basePhi: phi,
+                    // More variation in radius for "cloud" look
+                    radius: this.baseRadius + (Math.random() - 0.5) * 40,
+                    size: Math.random() * 2.2 + 0.5,
+                    opacity: Math.random() * 0.7 + 0.3,
+                    color: color,
+                    speed: Math.random() * 0.0004 + 0.0002, // Slower, more elegant base speed
+                    offset: Math.random() * 100
+                };
+            }
+
+            updateAudioLevel(level) {
+                // Smooth damping
+                this.targetAudioLevel = level;
+            }
+
+            setListening(listening) {
+                this.isListening = listening;
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+
+                // Ease the audio level for buttery smooth reaction
+                this.audioLevel += (this.targetAudioLevel - this.audioLevel) * 0.1;
+
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); // Clear
+
+                // Composite operation for nicer blending of glows
+                this.ctx.globalCompositeOperation = 'screen';
+
+                const time = Date.now() * 0.001;
+
+                // Sort particles by Z-depth for correct occlusion (Painter's Algorithm)
+                // This is crucial for the 3D depth effect
+                this.particles.sort((a, b) => {
+                    // Simple z projection logic approx
+                    return (Math.cos(b.phi) - Math.cos(a.phi));
+                });
+
+                this.particles.forEach(p => {
+                    // 1. Calculate Motion
+                    // Audio Level increases chaotic motion
+                    const noise = this.audioLevel * 0.8;
+
+                    // Base rotation + audio disturbance
+                    p.theta = p.baseTheta + Math.sin(time * p.speed * 2 + p.offset) * (0.2 + noise);
+                    p.phi = p.basePhi + Math.cos(time * p.speed + p.offset) * (0.2 + noise);
+
+                    // 2. React to Audio (Expansion)
+                    // Non-linear expansion looks more organic than linear
+                    const expansion = 1 + (Math.pow(this.audioLevel, 2) * 0.8);
+                    const r = p.radius * expansion;
+
+                    // 3. 3D to 2D Projection
+                    const x = r * Math.sin(p.phi) * Math.cos(p.theta);
+                    const y = r * Math.sin(p.phi) * Math.sin(p.theta);
+                    const z = r * Math.cos(p.phi);
+
+                    // Perspective divide
+                    const perspective = 350; // Camera distance
+                    const scale = perspective / (perspective + z);
+
+                    const x2d = this.centerX + x * scale;
+                    const y2d = this.centerY + y * scale;
+
+                    // 4. Depth Styling (Bokeh Effect)
+                    // Particles further back (z > 0) are smaller and more transparent
+                    // Particles closer (z < 0) are larger and brighter
+
+                    const distFactor = (z + r) / (2 * r); // Normalized 0-1 approx depth
+
+                    // Scale size by perspective AND audio
+                    let finalSize = p.size * scale;
+                    if (this.isListening) finalSize *= (1 + this.audioLevel * 1.5);
+
+                    // Opacity fades in back
+                    let finalOpacity = p.opacity * scale;
+                    // Boost opacity on beat
+                    finalOpacity += this.audioLevel * 0.3;
+                    if (finalOpacity > 1) finalOpacity = 1;
+
+                    // 5. Draw
+                    this.ctx.beginPath();
+                    this.ctx.arc(x2d, y2d, finalSize, 0, Math.PI * 2);
+                    this.ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${finalOpacity})`;
+                    this.ctx.fill();
+
+                    // 6. Glow - OPTIMIZED
+                    // Only heavy glow for very close particles or high volume
+                    if (this.audioLevel > 0.1 && scale > 0.95) {
+                        this.ctx.shadowBlur = (10 * scale) + (this.audioLevel * 15);
+                        this.ctx.shadowColor = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${finalOpacity * 0.5})`;
+                    } else {
+                        this.ctx.shadowBlur = 0;
+                    }
+                });
+
+                this.ctx.globalCompositeOperation = 'source-over'; // Reset
+            }
+        }
+
+        /* ============================================================================
+            VOICE LOGIC (With Streaming Text)
+            ============================================================================ */
+
+        class VoiceInteraction {
+            constructor() {
+                // Initialize State
+                this.initTypewriter("Hello! I'm listening...");
+                this.isListening = false;
+                this.isMuted = false;
+                this.typingTimeout = null;
+                this.sidebarHidden = false;
+
+                // Elements
+                this.micBtn = document.getElementById('micBtn');
+                this.cancelBtn = document.getElementById('cancelBtn');
+
+                this.statusText = document.getElementById('statusText');
+                this.aiResponse = document.getElementById('aiResponse');
+                this.transcription = document.getElementById('transcription');
+                this.loadingIndicator = document.getElementById('loadingIndicator');
+                this.sidebarToggle = document.getElementById('sidebarToggle');
+                this.responseContainer = document.getElementById('responseContainer');
+
+
+                // Particle System
+                this.particleSystem = new ParticleSystem(document.getElementById('particleCanvas'));
+
+                // Services
+                this.sessionToken = null;
+                this.socket = null;
+                this.initSession();
+                this.initSocket();
+                this.initSpeech();
+
+                // Events
+                this.micBtn.addEventListener('click', () => this.toggleListening());
+                this.cancelBtn.addEventListener('click', () => this.cancel());
+
+                this.sidebarToggle.addEventListener('click', () => this.toggleSidebar());
+
+                // Listen for parent messages
+                window.addEventListener('message', (e) => this.handleParentMessage(e));
+
+                // Auto-start listening on load -> REMOVED
+                // We now wait for 'enterVoiceMode' from parent
+                // setTimeout(() => this.startListening(), 1000); 
+            }
+
+            /* --- Typewriter Effect --- */
+            initTypewriter(text) {
+                const el = document.getElementById('aiResponse');
+                el.textContent = ''; // Clear
+
+                let i = 0;
+                const speed = 25; // ms per char
+
+                const type = () => {
+                    if (i < text.length) {
+                        el.textContent += text.charAt(i);
+                        i++;
+                        this.typingTimeout = setTimeout(type, speed);
+                    }
+                };
+                type();
+            }
+
+            stopTypewriter() {
+                if (this.typingTimeout) clearTimeout(this.typingTimeout);
+            }
+
+            /* --- Sidebar Toggle --- */
+            toggleSidebar() {
+                this.sidebarHidden = !this.sidebarHidden;
+                const toggleIcon = document.getElementById('toggleIcon');
+
+                if (this.sidebarHidden) {
+                    this.responseContainer.classList.add('hidden');
+                    this.sidebarToggle.classList.add('hidden');
+                    toggleIcon.textContent = '▶';
+                } else {
+                    this.responseContainer.classList.remove('hidden');
+                    this.sidebarToggle.classList.remove('hidden');
+                    toggleIcon.textContent = '◀';
+                }
+            }
+
+
+
+            /* ---
+                Session & Socket --- */
+            initSession() {
+                try {
+                    if (window.parent !== window) {
+                        this.sessionToken = window.parent.localStorage.getItem('session_token');
+                    }
+                }
+
+                catch (e) {
+                    console.warn("Parent access blocked");
+                }
+
+                if (!this.sessionToken) this.sessionToken = localStorage.getItem('session_token');
+            }
+
+            initSocket() {
+                this.socket = io();
+
+                this.socket.on('connect', () => {
+                    if (this.sessionToken) this.socket.emit('authenticate', {
+                        session_token: this.sessionToken
+                    });
+                });
+
+                this.socket.on('authenticated', () => {
+                    // Only start if we are meant to be listening (entered voice mode)
+                    if (this.isListening && !this.isMuted) this.startListening();
+                });
+
+                this.socket.on('receive_message', (data) => this.handleAIResponse(data));
+            }
+
+            handleParentMessage(event) {
+                if (event.data.action === 'setSessionToken') {
+                    this.sessionToken = event.data.sessionToken;
+
+                    if (this.socket && this.socket.connected) {
+                        this.socket.emit('authenticate', {
+                            session_token: this.sessionToken
+                        });
+                    }
+                }
+
+                if (event.data.action === 'enterVoiceMode') {
+                    console.log("Entering voice mode...");
+                    this.isMuted = false; // Reset mute state on fresh entry? Or keep it?
+                    // Resetting mute seems friendlier for "fresh start"
+                    this.statusText.textContent = 'Listening...';
+                    this.startListening();
+                }
+
+                if (event.data.action === 'exitVoiceMode') {
+                    console.log("Exiting voice mode...");
+                    this.stopListening();
+                    window.speechSynthesis.cancel();
+                }
+            }
+
+            /* --- Speech Recognition --- */
+            initSpeech() {
+                if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                    this.aiResponse.textContent = "Browser does not support speech recognition.";
+                    return;
+                }
+
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                this.recognition = new SpeechRecognition();
+                this.recognition.continuous = false;
+                this.recognition.interimResults = false;
+                this.recognition.lang = 'en-US';
+
+                this.recognition.onresult = (e) => this.handleTranscription(e.results[0][0].transcript);
+
+                this.recognition.onerror = (e) => {
+                    console.error("Speech Error", e);
+
+                    if (e.error !== 'aborted' && !this.isMuted) {
+                        setTimeout(() => this.startListening(), 1000);
+                    }
+
+                    else {
+                        this.stopListening();
+                    }
+
+                    if (e.error === 'not-allowed') {
+                        this.isMuted = true;
+                        this.statusText.textContent = "Mic denied. Tap to retry.";
+                        this.micBtn.classList.remove('active');
+                    }
+                };
+
+                this.recognition.onend = () => {
+                    if (this.isListening && !this.processing && !this.isMuted) {
+                        this.recognition.start();
+                    }
+                };
+            }
+
+            /* --- Interaction Flow --- */
+            async toggleListening() {
+                if (this.isMuted) {
+                    this.isMuted = false;
+                    this.statusText.textContent = 'Resuming...';
+                    await this.startListening();
+                } else {
+                    this.isMuted = true;
+                    this.stopListening();
+                    this.statusText.textContent = 'Muted. Tap mic to resume.';
+                    this.micBtn.classList.remove('active');
+                }
+            }
+
+            async startListening() {
+                if (this.isMuted) return; // Respect mute state
+
+                try {
+                    // Audio Context for Visualizer
+                    if (!this.audioContext) {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        this.analyser = this.audioContext.createAnalyser();
+                        this.analyser.fftSize = 256;
+
+                        const source = this.audioContext.createMediaStreamSource(stream);
+                        source.connect(this.analyser);
+
+                        this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+                    }
+
+                    if (this.audioContext.state === 'suspended') await this.audioContext.resume();
+
+                    // State Update
+                    this.isListening = true;
+                    this.processing = false;
+
+                    // UI Update
+                    this.micBtn.classList.add('active');
+
+                    this.statusText.textContent = 'Listening...';
+                    this.statusText.classList.add('listening');
+
+                    this.stopTypewriter();
+                    this.aiResponse.style.opacity = '0.5';
+                    this.transcription.textContent = '';
+                    this.transcription.classList.remove('visible');
+
+                    this.particleSystem.setListening(true);
+                    this.monitorAudio();
+
+                    try { this.recognition.start(); } catch (e) { }
+                } catch (e) {
+                    console.error(e);
+                    this.aiResponse.textContent = "Microphone access denied.";
+                }
+            }
+
+            stopListening() {
+                this.isListening = false;
+
+                // Cleanup Audio
+                if (this.audioContext) {
+                    this.audioContext.close();
+                    this.audioContext = null;
+                }
+
+                if (this.recognition) this.recognition.stop();
+
+                // UI Reset
+                this.micBtn.classList.remove('active');
+
+                this.statusText.classList.remove('listening');
+
+                if (!this.processing) {
+                    this.statusText.textContent = this.isMuted ? 'Muted' : 'Tap to speak';
+                }
+
+                this.particleSystem.setListening(false);
+                this.particleSystem.updateAudioLevel(0);
+            }
+
+            monitorAudio() {
+                if (!this.isListening) return;
+                this.analyser.getByteFrequencyData(this.dataArray);
+                let sum = 0;
+                for (let i = 0; i < this.dataArray.length; i++) sum += this.dataArray[i];
+                const avg = sum / this.dataArray.length;
+                this.particleSystem.updateAudioLevel(avg / 255);
+                requestAnimationFrame(() => this.monitorAudio());
+            }
+
+            /* --- Logic Handling --- */
+            handleTranscription(text) {
+                this.processing = true;
+                this.stopListening();
+
+                this.transcription.textContent = `"${text}" `;
+                this.transcription.classList.add('visible');
+
+                this.loadingIndicator.classList.add('visible');
+                this.statusText.textContent = '';
+
+                if (this.socket) {
+                    this.socket.emit('send_message', {
+                        session_token: this.sessionToken,
+                        message: text,
+                        mode: 'voice'
+                    });
+                }
+            }
+
+            handleAIResponse(data) {
+                this.processing = false;
+                this.loadingIndicator.classList.remove('visible');
+
+                let displayText = data.response;
+                displayText = displayText.replace(/(https?:\/\/[^\s]+)/gi, '').replace(/(www\.[^\s]+)/gi, '').replace(/\b(http|https|www)\b/gi, '').replace(/here'?s?\s+the\s+link:?/gi, ' ')
+                    .replace(/here'?s?\s+the\s+search:?/gi, ' ')
+                    .replace(/\s+/g, ' ').trim();
+
+                this.autoOpen(data.response);
+                this.syncToChat(data.message, displayText);
+
+                this.aiResponse.style.opacity = '1';
+                this.initTypewriter(displayText);
+                this.statusText.textContent = 'Tap to speak';
+
+                this.speak(displayText);
+
+                setTimeout(() => this.transcription.classList.remove('visible'), 4000);
+            }
+
+            autoOpen(text) {
+                const patterns = [
+                    /(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/gi,
+                    /https?:\/\/[^\s]*google\.com\/search[^\s]*/i,
+                    /(https?:\/\/[^\s]+)/gi
+                ];
+                let opened = new Set();
+
+                patterns.forEach(regex => {
+                    const matches = text.match(regex);
+
+                    if (matches) {
+                        matches.forEach(link => {
+                            let url = link.startsWith('http') ? link : 'https://' + link;
+
+                            if (!opened.has(url)) {
+                                window.open(url, '_blank');
+                                opened.add(url);
+                            }
+                        });
+                    }
+                });
+            }
+
+            syncToChat(userMsg, aiMsg) {
+                if (window.parent !== window) {
+                    window.parent.postMessage({
+                        action: 'addVoiceMessage',
+                        userMessage: userMsg,
+                        aiResponse: aiMsg
+                    }, '*');
+                }
+            }
+
+            speak(text) {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+
+                    const clean = text.replace(/(https?:\/\/[^\s]+)/gi, '').trim();
+
+                    if (!clean) {
+                        if (!this.isMuted) this.startListening();
+                        return;
+                    }
+
+                    const u = new SpeechSynthesisUtterance(clean);
+                    u.rate = 1.0;
+                    u.pitch = 1.0;
+
+                    u.onend = () => {
+                        if (!this.isMuted) {
+                            this.startListening();
+                        }
+                    }
+
+                        ;
+
+                    window.speechSynthesis.speak(u);
+                }
+
+                else {
+                    if (!this.isMuted) setTimeout(() => this.startListening(), 2000);
+                }
+            }
+
+            cancel() {
+                this.stopListening();
+                window.speechSynthesis.cancel();
+
+                if (window.parent !== window) {
+                    window.parent.postMessage({
+                        action: 'exitVoiceMode'
+                    }, '*');
+                }
+            }
+        }
+
+        // Start
+        const app = new VoiceInteraction();
+    </script>
+</body>
+
+</html>
